@@ -1,0 +1,3593 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>✨ 單字卡學習 APP</title>
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- iOS PWA support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VocabMaster">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<!-- Android / general -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#a29bfe">
+<meta name="description" content="英文單字卡學習 APP，字首字根字尾分析、語音朗讀與測驗">
+
+<!-- Prevent phone number detection -->
+<meta name="format-detection" content="telephone=no">
+
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Caveat:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e17;
+    --surface: #1a1929;
+    --card: #232238;
+    --card2: #2a2942;
+    --border: #3a3860;
+    --prefix-color: #ff6b9d;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --root-color: #ffd166;
+    --suffix-color: #06d6a0;
+    --accent: #a29bfe;
+    --text: #fffffe;
+    --muted: #a8a5c0;
+    --tag-bg: #2d2b4e;
+    --learned: #06d6a0;
+    --btn-primary: linear-gradient(135deg, #a29bfe, #6c63ff);
+    --btn-review: linear-gradient(135deg, #ff6b9d, #e84393);
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --radius: 20px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    background-image: 
+      radial-gradient(ellipse at 20% 50%, rgba(162,155,254,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(255,107,157,0.06) 0%, transparent 50%);
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(26,25,41,0.9);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    font-family: 'Caveat', cursive;
+    font-size: 1.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #a29bfe, #ff6b9d, #ffd166);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 1px;
+  }
+  .stats-bar {
+    display: flex; gap: 16px; align-items: center;
+  }
+  .stat-chip {
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .stat-chip .num { color: var(--text); font-size: 1rem; }
+
+  /* ===== TABS ===== */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    padding: 16px 24px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-radius: 10px 10px 0 0;
+    transition: all 0.2s;
+    border-bottom: 3px solid transparent;
+  }
+  .tab-btn:hover { color: var(--text); background: var(--tag-bg); }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: var(--card);
+  }
+
+  /* ===== VIEWS ===== */
+  .view { display: none; padding: 24px; max-width: 900px; margin: 0 auto; }
+  .view.active { display: block; }
+
+  /* ===== SEARCH & FILTERS ===== */
+  .search-row {
+    display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;
+  }
+  .search-box {
+    flex: 1; min-width: 200px;
+    padding: 12px 18px 12px 44px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 0.95rem;
+    font-family: 'Nunito', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='%23a8a5c0' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 14px center;
+  }
+  .search-box:focus { border-color: var(--accent); }
+
+  .filter-btn {
+    padding: 10px 16px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(162,155,254,0.1);
+  }
+
+  /* ===== WORD LIST ===== */
+  .word-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .word-tile {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .word-tile:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(162,155,254,0.2);
+  }
+  .word-tile.learned-tile {
+    border-color: rgba(6,214,160,0.3);
+  }
+  .word-tile.learned-tile::after {
+    content: '✓';
+    position: absolute;
+    top: 10px; right: 12px;
+    color: var(--learned);
+    font-weight: 900;
+    font-size: 1rem;
+  }
+  .tile-word {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 1.15rem;
+    margin-bottom: 4px;
+  }
+  .tile-pos {
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-weight: 700;
+    background: rgba(162,155,254,0.12);
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-bottom: 6px;
+  }
+  .tile-meaning {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.4;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  /* ===== FLASHCARD ===== */
+  .card-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+  }
+  .card-counter {
+    font-family: 'Caveat', cursive;
+    font-size: 1.4rem;
+    color: var(--muted);
+  }
+  .card-counter strong { color: var(--text); font-size: 1.6rem; }
+
+  .mode-btns { display: flex; gap: 8px; }
+  .mode-btn {
+    padding: 8px 14px;
+    border-radius: 50px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Nunito', sans-serif;
+  }
+  .mode-btn.active {
+    background: var(--btn-primary);
+    border-color: transparent;
+    color: white;
+  }
+
+  .flashcard-wrapper {
+    perspective: 1000px;
+    margin-bottom: 24px;
+  }
+  .flashcard {
+    width: 100%;
+    min-height: 420px;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+  }
+  .flashcard.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    width: 100%; min-height: 420px;
+    backface-visibility: hidden;
+    border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+  }
+  .card-front { background: var(--card); }
+  .card-back {
+    background: var(--card2);
+    transform: rotateY(180deg);
+  }
+
+  /* Front face */
+  .card-front {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .fc-word {
+    font-family: 'Nunito', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 900;
+    margin-bottom: 16px;
+    line-height: 1.2;
+    color: var(--text);
+    letter-spacing: 1px;
+  }
+  .fc-pronunciation {
+    font-family: 'Caveat', cursive;
+    font-size: 1.15rem;
+    color: #ffd166;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .fc-tap-hint {
+    position: absolute;
+    bottom: 20px;
+    left: 0; right: 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    opacity: 0.7;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:0.9} }
+
+  /* Back face */
+  .fc-back-word {
+    font-family: 'Nunito', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+    line-height: 1.2;
+    letter-spacing: 1px;
+  }
+  .fc-pos-meaning {
+    font-size: 1rem;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .fc-pos-meaning .pos-tag {
+    display: inline-block;
+    background: rgba(162,155,254,0.15);
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.82rem;
+    padding: 2px 10px;
+    border-radius: 20px;
+    margin-right: 8px;
+  }
+  .fc-pos-meaning .meaning-text {
+    color: var(--muted);
+    font-size: 1rem;
+  }
+  .fc-section { margin-bottom: 16px; }
+  .fc-section-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+  .morpheme-row {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .morpheme-chip {
+    padding: 5px 13px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.92rem;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .chip-prefix { background: rgba(255,107,157,0.15); color: var(--prefix-color); border: 1px solid rgba(255,107,157,0.3); }
+  .chip-root   { background: rgba(255,209,102,0.15); color: #ffd166;             border: 1px solid rgba(255,209,102,0.3); }
+  .chip-suffix { background: rgba(6,214,160,0.15);   color: var(--suffix-color); border: 1px solid rgba(6,214,160,0.3); }
+  .chip-arrow  { color: var(--muted); font-size: 0.9rem; margin: 0 4px; }
+  .chip-result { background: rgba(162,155,254,0.12); color: var(--accent); border: 1px solid rgba(162,155,254,0.3); }
+
+  .fc-example {
+    background: rgba(255,255,255,0.04);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+  .fc-example .en { color: var(--text); margin-bottom: 5px; }
+  .fc-example .cn { color: var(--muted); font-size: 0.9rem; }
+
+  .speak-btn {
+    background: none;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+  .speak-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(162,155,254,0.1); }
+
+  /* Card actions */
+  .card-actions {
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+  }
+  .action-btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-prev, .btn-next {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+  }
+  .btn-prev:hover, .btn-next:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-learned {
+    background: var(--btn-primary);
+    color: white;
+  }
+  .btn-learned:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(162,155,254,0.4); }
+  .btn-learned.is-learned {
+    background: linear-gradient(135deg, #06d6a0, #00b894);
+  }
+
+  /* ===== REVIEW MODE ===== */
+  .review-header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .review-header h2 {
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    margin-bottom: 6px;
+  }
+  .progress-bar-wrap {
+    background: var(--card);
+    border-radius: 20px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #a29bfe, #ff6b9d);
+    border-radius: 20px;
+    transition: width 0.4s ease;
+  }
+
+  .quiz-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .quiz-word {
+    font-family: 'Nunito', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+  .quiz-pos { color: var(--accent); font-size: 0.85rem; margin-bottom: 16px; }
+  .quiz-pronunciation {
+    font-family: 'Caveat', cursive;
+    font-size: 1.1rem;
+    color: #ffd166;
+    margin-bottom: 12px;
+  }
+  .quiz-hint { color: var(--muted); font-size: 0.88rem; }
+
+  .quiz-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .quiz-option {
+    padding: 14px 18px;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    line-height: 1.4;
+  }
+  .quiz-option:hover { border-color: var(--accent); background: rgba(162,155,254,0.08); }
+  .quiz-option.correct { border-color: var(--learned); background: rgba(6,214,160,0.12); color: var(--learned); }
+  .quiz-option.wrong   { border-color: var(--prefix-color); background: rgba(255,107,157,0.1); color: var(--prefix-color); }
+
+  .quiz-result {
+    display: none;
+    text-align: center;
+    padding: 32px;
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .quiz-result h3 { font-family: 'Nunito', sans-serif; font-size: 1.8rem; font-weight: 900; margin-bottom: 8px; }
+  .quiz-score { font-size: 3rem; font-weight: 900; font-family: 'Caveat', cursive; color: var(--accent); }
+
+  /* Quiz mode selection cards */
+  .quiz-mode-card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .quiz-mode-card:hover {
+    border-color: var(--accent);
+    background: rgba(162,155,254,0.07);
+    transform: translateY(-2px);
+  }
+  .quiz-mode-card.selected {
+    border-color: var(--accent);
+    background: rgba(162,155,254,0.12);
+    box-shadow: 0 0 0 3px rgba(162,155,254,0.2);
+  }
+  .quiz-mode-icon { font-size: 2.2rem; margin-bottom: 10px; }
+  .quiz-mode-title { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 1.05rem; margin-bottom: 6px; }
+  .quiz-mode-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+
+  /* Spelling quiz */
+  .spelling-play-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin: 0 auto 16px;
+    padding: 18px 40px;
+    background: linear-gradient(135deg, rgba(162,155,254,0.15), rgba(255,107,157,0.1));
+    border: 2px solid var(--accent);
+    border-radius: 20px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .spelling-play-btn:hover {
+    background: linear-gradient(135deg, rgba(162,155,254,0.25), rgba(255,107,157,0.18));
+    transform: scale(1.03);
+  }
+  .spelling-play-btn.playing {
+    border-color: #06d6a0;
+    animation: speakPulse 0.8s ease-in-out infinite alternate;
+  }
+  @keyframes speakPulse { from{box-shadow:0 0 0 0 rgba(6,214,160,0.4)} to{box-shadow:0 0 0 10px rgba(6,214,160,0)} }
+
+  .spelling-hint-row {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    min-height: 28px;
+  }
+  .spelling-blank {
+    width: 22px;
+    height: 28px;
+    border-bottom: 2.5px solid var(--border);
+    display: inline-block;
+  }
+  .spelling-hint-char {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: var(--muted);
+    width: 22px;
+    text-align: center;
+    border-bottom: 2.5px solid var(--border);
+  }
+
+  .spelling-input-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+  .spelling-input {
+    flex: 1;
+    padding: 14px 18px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    outline: none;
+    transition: border-color 0.2s;
+    text-align: center;
+  }
+  .spelling-input:focus { border-color: var(--accent); }
+  .spelling-input.correct-input { border-color: var(--learned); background: rgba(6,214,160,0.08); }
+  .spelling-input.wrong-input  { border-color: var(--prefix-color); background: rgba(255,107,157,0.08); }
+
+  /* ===== LEGEND ===== */
+  .legend {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.78rem; font-weight: 700;
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ===== PROGRESS VIEW ===== */
+  .progress-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px;
+    margin-bottom: 24px;
+  }
+  .progress-stat-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+  }
+  .progress-stat-card .big { font-family: 'Caveat', cursive; font-size: 2.8rem; font-weight: 700; }
+  .progress-stat-card .label { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+  .learned-list {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    overflow: hidden;
+  }
+  .learned-list-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .learned-list-item {
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(58,56,96,0.5);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.88rem;
+    transition: background 0.15s;
+  }
+  .learned-list-item:hover { background: rgba(162,155,254,0.05); }
+  .learned-list-item:last-child { border-bottom: none; }
+  .remove-learned {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 1rem; transition: color 0.2s;
+  }
+  .remove-learned:hover { color: var(--prefix-color); }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--muted);
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.95rem; line-height: 1.6; }
+
+  .btn-primary {
+    padding: 12px 28px;
+    background: var(--btn-primary);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { transform: scale(1.03); box-shadow: 0 4px 20px rgba(162,155,254,0.3); }
+
+  .btn-danger {
+    padding: 10px 20px;
+    background: rgba(255,107,157,0.1);
+    color: var(--prefix-color);
+    border: 1.5px solid rgba(255,107,157,0.3);
+    border-radius: 50px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-danger:hover { background: rgba(255,107,157,0.2); }
+
+  /* ===== MODAL / DETAIL VIEW ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(15,14,23,0.85);
+    backdrop-filter: blur(6px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:none;opacity:1} }
+  .modal-close {
+    position: absolute; top: 16px; right: 16px;
+    background: var(--tag-bg); border: none; color: var(--muted);
+    width: 32px; height: 32px; border-radius: 50%;
+    cursor: pointer; font-size: 1rem; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { color: var(--text); background: var(--border); }
+
+  /* ===== UPLOAD SECTION ===== */
+  .upload-area {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+  .upload-area:hover, .upload-area.dragover {
+    border-color: var(--accent);
+    background: rgba(162,155,254,0.05);
+  }
+  .upload-area .icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .upload-area p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+  #file-input { display: none; }
+
+  .how-to {
+    background: var(--card2);
+    border-radius: 14px;
+    padding: 20px;
+    border: 1px solid var(--border);
+  }
+  .how-to h4 { font-family: 'Nunito', sans-serif; font-weight: 800; margin-bottom: 12px; color: var(--accent); }
+  .how-to pre {
+    font-family: 'Caveat', cursive;
+    font-size: 0.85rem;
+    color: var(--muted);
+    white-space: pre-wrap;
+    line-height: 1.8;
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--card2);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 20px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    z-index: 999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show { transform: none; opacity: 1; }
+  .toast.success { border-color: var(--learned); }
+
+  @media (max-width: 600px) {
+    .word-grid { grid-template-columns: 1fr 1fr; }
+    .quiz-options { grid-template-columns: 1fr; }
+    .fc-word { font-size: 1.9rem; }
+    .stats-bar { gap: 8px; }
+    .stat-chip { padding: 4px 10px; font-size: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">✦ VocabMaster</div>
+  <div class="stats-bar">
+    <div class="stat-chip">📚 <span class="num" id="total-count">0</span> 單字</div>
+    <div class="stat-chip">✅ <span class="num" id="learned-count">0</span> 已學</div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('list')">📋 單字列表</button>
+  <button class="tab-btn" onclick="switchTab('card')">🃏 單字卡</button>
+  <button class="tab-btn" onclick="switchTab('review')">🧠 測驗</button>
+  <button class="tab-btn" onclick="switchTab('progress')">📊 學習進度</button>
+  <button class="tab-btn" onclick="switchTab('upload')">📁 更新檔案</button>
+</div>
+
+<!-- ===== LIST VIEW ===== -->
+<div id="view-list" class="view active">
+  <div class="search-row">
+    <input class="search-box" type="text" id="search-input" placeholder="搜尋單字...">
+    <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">全部</button>
+    <button class="filter-btn" id="filter-new" onclick="setFilter('new')">未學</button>
+    <button class="filter-btn" id="filter-learned" onclick="setFilter('learned')">已學</button>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--prefix-color)"></div> 字首</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd166"></div> 字根</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--suffix-color)"></div> 字尾</div>
+  </div>
+  <div class="word-grid" id="word-grid"></div>
+</div>
+
+<!-- ===== CARD VIEW ===== -->
+<div id="view-card" class="view">
+  <div class="card-nav">
+    <div class="card-counter">
+      <strong id="card-current">1</strong> / <span id="card-total">0</span>
+    </div>
+    <div class="mode-btns">
+      <button class="mode-btn active" id="mode-all-btn" onclick="setCardMode('all')">全部</button>
+      <button class="mode-btn" id="mode-new-btn" onclick="setCardMode('new')">未學</button>
+      <button class="mode-btn" id="mode-review-btn" onclick="setCardMode('review')">已學</button>
+      <button class="mode-btn" id="speed-toggle" onclick="toggleSpeed()" style="border-color:#06d6a0;color:#06d6a0">🐢 慢速</button>
+    </div>
+  </div>
+
+  <div class="flashcard-wrapper">
+    <div class="flashcard" id="flashcard" onclick="flipCard()">
+      <!-- Front -->
+      <div class="card-face card-front" id="card-front">
+        <div class="fc-word" id="fc-word"></div>
+        <div class="fc-pronunciation" id="fc-pron">
+          <span id="fc-pron-text"></span>
+          <button class="speak-btn" onclick="event.stopPropagation();speakCurrentWord()" title="朗讀單字">🔊</button>
+        </div>
+        <div class="fc-tap-hint">👆 點擊查看詳細解析</div>
+      </div>
+      <!-- Back -->
+      <div class="card-face card-back" id="card-back">
+        <div class="fc-back-word" id="fc-back-word"></div>
+        <div class="fc-pos-meaning" id="fc-pos-meaning"></div>
+        <div class="fc-section">
+          <div class="fc-section-label">🔤 字義拆解</div>
+          <div class="morpheme-row" id="fc-morphemes"></div>
+        </div>
+        <div class="fc-section">
+          <div class="fc-section-label">📝 例句
+            <button class="speak-btn" onclick="event.stopPropagation(); speakExample()" title="朗讀例句">🔊</button>
+          </div>
+          <div class="fc-example">
+            <div class="en" id="fc-example-en"></div>
+            <div class="cn" id="fc-example-cn"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-actions">
+    <button class="action-btn btn-prev" onclick="prevCard()">← 上一張</button>
+    <button class="action-btn btn-learned" id="learned-btn" onclick="toggleLearned()">⭐ 標為已學</button>
+    <button class="action-btn btn-next" onclick="nextCard()">下一張 →</button>
+  </div>
+</div>
+
+<!-- ===== REVIEW VIEW ===== -->
+<div id="view-review" class="view">
+  <div id="quiz-setup">
+    <div class="review-header">
+      <h2>🧠 單字測驗</h2>
+      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:20px">選擇測驗模式</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:560px;margin:0 auto 28px">
+      <!-- Mode A -->
+      <div class="quiz-mode-card" onclick="selectQuizMode('meaning')" id="modecard-meaning">
+        <div class="quiz-mode-icon">📖</div>
+        <div class="quiz-mode-title">中文選擇</div>
+        <div class="quiz-mode-desc">看單字，選出正確中文意思</div>
+      </div>
+      <!-- Mode B -->
+      <div class="quiz-mode-card" onclick="selectQuizMode('spelling')" id="modecard-spelling">
+        <div class="quiz-mode-icon">🎧</div>
+        <div class="quiz-mode-title">聽音拼字</div>
+        <div class="quiz-mode-desc">聽語音，拼出正確英文單字</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:560px;margin:0 auto 20px">
+      <div class="progress-stat-card">
+        <div class="big" style="color:var(--prefix-color)" id="quiz-total-learned">0</div>
+        <div class="label">已學單字</div>
+      </div>
+      <div class="progress-stat-card">
+        <div class="big" style="color:var(--accent)" id="quiz-total-pool">0</div>
+        <div class="label">全部單字</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="btn-primary" onclick="startQuiz('learned')">測驗已學單字</button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,#ffd166,#f0a500);color:#1a1929" onclick="startQuiz('all')">測驗全部單字</button>
+    </div>
+  </div>
+
+  <div id="quiz-active" style="display:none">
+    <div class="review-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="color:var(--muted);font-size:0.88rem">題目 <strong id="q-current">1</strong> / <strong id="q-total">10</strong></span>
+        <span style="color:#ffd166;font-weight:800;font-size:0.95rem">✨ <span id="q-score">0</span> 分</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="quiz-progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- MEANING MODE card -->
+    <div class="quiz-card" id="q-meaning-card">
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px">
+        <div class="quiz-word" id="q-word"></div>
+        <button class="speak-btn" onclick="speakQuizWord()" style="width:38px;height:38px;font-size:1.1rem">🔊</button>
+      </div>
+      <div class="quiz-pos" id="q-pos"></div>
+      <div class="quiz-pronunciation" id="q-pron"></div>
+    </div>
+
+    <!-- SPELLING MODE card -->
+    <div class="quiz-card" id="q-spelling-card" style="display:none">
+      <div style="margin-bottom:16px">
+        <div style="color:var(--muted);font-size:0.82rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">👂 聽語音，拼出單字</div>
+        <button class="spelling-play-btn" onclick="speakQuizWordSpelling()" id="spelling-play-btn">
+          <span style="font-size:2rem">🔊</span>
+          <span>播放語音</span>
+        </button>
+      </div>
+      <div class="spelling-hint-row" id="spelling-hint-row"></div>
+      <div style="color:var(--muted);font-size:0.85rem;margin-bottom:4px" id="q-spelling-pos"></div>
+    </div>
+
+    <div class="quiz-options" id="quiz-options"></div>
+
+    <!-- Spelling input area -->
+    <div id="spelling-input-area" style="display:none;margin-bottom:20px">
+      <div class="spelling-input-wrap">
+        <input type="text" id="spelling-input" class="spelling-input" placeholder="輸入英文單字..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+        <button class="btn-primary" onclick="checkSpelling()" id="spelling-submit-btn" style="padding:12px 24px">確認</button>
+      </div>
+      <div id="spelling-feedback" style="margin-top:12px;text-align:center;font-size:0.95rem;font-weight:700;min-height:28px"></div>
+    </div>
+
+    <div style="text-align:center">
+      <button class="btn-primary" id="quiz-next-btn" onclick="nextQuestion()" style="display:none">下一題 →</button>
+    </div>
+  </div>
+
+  <div class="quiz-result" id="quiz-result">
+    <div class="icon" style="font-size:3rem;margin-bottom:12px" id="result-icon"></div>
+    <h3 id="result-title"></h3>
+    <div class="quiz-score" id="result-score"></div>
+    <p style="color:var(--muted);margin:8px 0 24px;font-size:0.9rem" id="result-msg"></p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="btn-primary" onclick="resetQuiz()">再測一次</button>
+      <button class="btn-primary" style="background:var(--card);border:1.5px solid var(--border);color:var(--text)" onclick="switchTab('list')">回單字列表</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PROGRESS VIEW ===== -->
+<div id="view-progress" class="view">
+  <div class="progress-grid">
+    <div class="progress-stat-card">
+      <div class="big" style="color:var(--accent)" id="pg-total">0</div>
+      <div class="label">全部單字</div>
+    </div>
+    <div class="progress-stat-card">
+      <div class="big" style="color:var(--learned)" id="pg-learned">0</div>
+      <div class="label">已學單字</div>
+    </div>
+    <div class="progress-stat-card">
+      <div class="big" style="color:#ffd166" id="pg-percent">0%</div>
+      <div class="label">學習進度</div>
+    </div>
+    <div class="progress-stat-card">
+      <div class="big" style="color:var(--prefix-color)" id="pg-remaining">0</div>
+      <div class="label">剩餘單字</div>
+    </div>
+  </div>
+
+  <div class="progress-bar-wrap" style="height:14px;margin-bottom:24px">
+    <div class="progress-bar-fill" id="pg-progress-bar" style="width:0%"></div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <h3 style="font-family:'Nunito',sans-serif;font-weight:900">✅ 已學單字清單</h3>
+    <button class="btn-danger" onclick="clearAllLearned()">清除全部記錄</button>
+  </div>
+  <div id="learned-list-container"></div>
+</div>
+
+<!-- ===== UPLOAD VIEW ===== -->
+<div id="view-upload" class="view">
+  <h2 style="font-family:'Nunito',sans-serif;font-weight:900;margin-bottom:8px">📁 更新單字檔案</h2>
+  <p style="color:var(--muted);margin-bottom:20px;font-size:0.9rem">上傳新的 vocabulary.txt 以更新單字庫，原有學習記錄不會消失。</p>
+  
+  <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+    <div class="icon">📂</div>
+    <p><strong>點擊選擇檔案</strong> 或拖拉至此</p>
+    <p style="margin-top:6px;font-size:0.8rem;opacity:0.6">支援 .txt 格式</p>
+  </div>
+  <input type="file" id="file-input" accept=".txt" onchange="loadFile(event)">
+
+  <div class="how-to">
+    <h4>📌 如何新增或修改單字</h4>
+    <pre>
+格式：word,"word (pos.) 中文意思
+【發音】/ 音節 /
+【字義】字首/字根/字尾分析
+【例句】English sentence. 中文翻譯"
+
+範例：
+invisible,"invisible (adj.) 看不見的
+【發音】/ in / vis / i / ble /
+【字義】in- (不) + vis (看) + -ible (能夠...的) -> 不能被看見的。
+【例句】I wish I were invisible. 我希望我是隱形的。"
+    </pre>
+  </div>
+</div>
+
+<!-- ===== DETAIL MODAL ===== -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+let allWords = [];
+let learnedSet = new Set();
+let cardIndex = 0;
+let cardMode = 'all'; // all | new | review
+let cardPool = [];
+let quizPool = [];
+let quizIndex = 0;
+let quizScore = 0;
+let quizAnswered = false;
+let currentFilter = 'all';
+let searchTerm = '';
+
+// ============================================================
+// VOCABULARY DATA (edit here or upload a new file)
+// ============================================================
+const RAW_VOCABULARY = `together,"together (adv.) 一起
+【發音】/ to / geth / er /
+【字義】to- (在) + gather (集合) -> 聚集在一個地方。
+【例句】Let's go to the park together and play basketball! 我們一起去公園打籃球吧！"
+when,"when (adv./conj.) 何時
+【發音】/ wh / en /
+【字義】詢問時間的疑問詞。
+【例句】When can we go home? I'm so hungry! 我們什麼時候可以回家？我好餓喔！"
+how,"how (adv.) 如何
+【發音】/ h / ow /
+【字義】詢問方式或程度的疑問詞。
+【例句】How did you finish your homework so fast? 你是怎麼這麼快寫完作業的？"
+whose,"whose (pron.) 誰的
+【發音】/ wh / ose /
+【字義】who (誰) 的所有格形式。
+【例句】Whose socks are these? They smell terrible! 這是誰的襪子？聞起來太可怕了！"
+sure,"sure (adj.) 確定的
+【發音】/ s / ure /
+【字義】表示肯定的、確信的狀態。
+【例句】Are you sure there is no ghost under my bed? 你確定我的床底下沒有鬼嗎？"
+sorry,"sorry (adj.) 對不起的；抱歉的
+【發音】/ sor / ry /
+【字義】表示遺憾、難過或道歉的感情。
+【例句】I am sorry I accidentally ate your chocolate. 對不起，我不小心把你的巧克力吃掉了。"
+thank,"thank (v.) 感謝
+【發音】/ th / ank /
+【字義】表達感激之情的動作。
+【例句】Remember to thank your mother for the delicious dinner. 記得謝謝媽媽準備了這麼好吃的晚餐。"
+somewhere,"somewhere (adv.) 某處
+【發音】/ some / where /
+【字義】some (某個) + where (哪裡) -> 在某個地方。
+【例句】I lost my pen somewhere in this messy room. 我把筆掉在這個混亂房間的某個地方了。"
+where,"where (adv.) 哪裡
+【發音】/ wh / ere /
+【字義】詢問地點或位置的疑問詞。
+【例句】Where is my cell phone? I can't find it! 我的手機在哪裡？我找不到它！"
+why,"why (adv.) 為什麼
+【發音】/ wh / y / (long i)
+【字義】詢問原因或目的的疑問詞。
+【例句】Why are you wearing sunglasses in the classroom? 你為什麼要在教室裡戴墨鏡？"
+meet,"meet (v.) 遇見；見面
+【發音】/ m / ee / t / (long e)
+【字義】兩人或多人聚集在同一個地方。
+【例句】Nice to meet you! Do you want to be my friend? 很高興遇見你！你想當我的朋友嗎？"
+goodbye,"goodbye (int./n.) 再見
+【發音】/ good / bye /
+【字義】離別時的祝福語。
+【例句】Say goodbye to your grandma before we leave. 我們離開前去跟奶奶說再見。"
+fine,"fine (adj.) 好的；健康的
+【發音】/ f / i / ne / (i_e long i)
+【字義】表示身體狀況良好或品質優良。
+【例句】'How are you?' 'I'm fine, thank you.' 「你好嗎？」「我很好，謝謝你。」"
+what,"what (pron.) 什麼
+【發音】/ wh / at /
+【字義】詢問事物名稱或內容的疑問詞。
+【例句】What is that strange thing in your lunch box? 你便當盒裡那個奇怪的東西是什麼？"
+which,"which (pron.) 哪一個
+【發音】/ wh / i / ch / (short i)
+【字義】在有限的選擇中詢問特定的一個。
+【例句】Which flavor do you like, chocolate or vanilla? 你喜歡哪種口味，巧克力還是香草？"
+who,"who (pron.) 誰
+【發音】/ wh / o /
+【字義】詢問人的身份或姓名的疑問詞。
+【例句】Who is the person singing loudly in the shower? 是誰在浴室裡大聲唱歌？"
+hello,"hello (int.) 你好
+【發音】/ hel / lo /
+【字義】見面時常用的問候語。
+【例句】Hello! Can you tell me how to get to the zoo? 你好！可以告訴我怎麼去動物園嗎？"
+please,"please (adv./v.) 請；使高興
+【發音】/ pl / ea / se / (long e)
+【字義】用於禮貌請求或表示取悅。
+【例句】Please give me a piece of paper. I need to write a note. 請給我一張紙，我需要寫便條。"
+welcome,"welcome (v./adj.) 歡迎
+【發音】/ wel / come /
+【字義】表示熱情接待或受歡迎。
+【例句】Welcome to my house! Make yourself at home. 歡迎來到我家！別客氣。"
+head,"head (n.) 頭
+【發音】/ h / ead / (ea-short)
+【字義】capit (頭) 的同義概念，身體最上部的部位。
+【例句】My head is so big that I can't find a hat that fits! 我的頭大到找不到適合的帽子！"
+ear(s),"ear(s) (n.) 耳朵
+【發音】/ ear / (long e)
+【字義】aud (聽) 相關的器官。
+【例句】Elephants have very big ears to help them stay cool. 象有很大的耳朵來幫助牠們保持涼快。"
+tooth,"tooth (n.) 牙齒
+【發音】/ t / oo / th / (long o)
+【字義】口中用來咀嚼的堅硬器官。
+【例句】I lost my first tooth yesterday, and the Tooth Fairy came! 我昨天掉了第一顆牙齒，牙齒仙子來了！"
+shoulder,"shoulder (n.) 肩膀
+【發音】/ sh / oul / der /
+【字義】連接手臂與頸部的部分。
+【例句】I fell asleep on the bus and my head dropped on his shoulder. 我在公車上睡著了，頭掉在他的肩膀上。"
+finger,"finger (n.) 手指
+【發音】/ fin / ger /
+【字義】手的末端，通常指拇指以外的四指。
+【例句】Don't put your finger in your nose; it's gross! 不要把手指伸進鼻子裡，那很噁心！"
+leg,"leg (n.) 腿
+【發音】/ l / e / g / (short e)
+【字義】支撐身體並用來走路的部位。
+【例句】A spider has eight legs, but I only have two. 蜘蛛有八條腿，但我只有兩條。"
+hear,"hear (v.) 聽見
+【發音】/ h / ear / (long e)
+【字義】aud- (聽) -> 接受聲音訊號。
+【例句】I can hear my brother snoring from the next room. 我可以聽到我弟在隔壁房間打呼的聲音。"
+say,"say (v.) 說
+【發音】/ s / ay / (ay long a)
+【字義】用言語表達思想。
+【例句】What did you say? Can you speak louder? 你說了什麼？可以大聲一點嗎？"
+tell,"tell (v.) 告訴
+【發音】/ t / e / ll / (short e)
+【字義】dict- (說) 的相關動作，傳達資訊。
+【例句】Don't tell anyone my secret about the broken vase! 不要把我不小心打破花瓶的秘密告訴任何人！"
+sit,"sit (v.) 坐
+【發音】/ s / i / t / (short i)
+【字義】讓身體重量落在臀部上的姿勢。
+【例句】Please sit down and open your English books. 請坐下並打開你的英文書。"
+smile,"smile (v./n.) 微笑
+【發音】/ sm / i / le / (i_e long i)
+【字義】表示愉快或友好的臉部表情。
+【例句】You have a beautiful smile when you are happy. 你快樂時的微笑很漂亮。"
+pick,"pick (v.) 挑選；摘
+【發音】/ p / i / ck / (short i)
+【字義】從多個中選出或採摘。
+【例句】Can you help me pick the best apple from the basket? 你可以幫我從籃子裡挑選最好的蘋果嗎？"
+hair,"hair (n.) 頭髮
+【發音】/ h / air / (r-control)
+【字義】長在頭皮上的毛髮。
+【例句】Your hair looks like a bird's nest this morning! 你今天的頭髮看起來像個鳥巢！"
+nose,"nose (n.) 鼻子
+【發音】/ n / o / se / (o_e long o)
+【字義】臉上用來呼吸和聞味的器官。
+【例句】My nose gets red whenever I catch a cold. 每當我感冒時，我的鼻子就會變紅。"
+body,"body (n.) 身體
+【發音】/ bod / y / (y long e)
+【字義】人的整個生理結構。
+【例句】Exercise is good for your body and your mind. 運動對你的身體和心理都有好處。"
+arm,"arm (n.) 手臂
+【發音】/ arm / (r-control)
+【字義】連接肩膀與手的上肢部分。
+【例句】He has strong arms because he plays baseball every day. 他有強壯的手臂，因為他每天打棒球。"
+heart,"heart (n.) 心臟
+【發音】/ h / ear / t /
+【字義】cord- (心) -> 身體泵血的中心器官。
+【例句】My heart beats fast when I am nervous. 當我緊張時，我的心跳會很快。"
+knee,"knee (n.) 膝蓋
+【發音】/ kn / ee / (silent k; long e)
+【字義】腿部中間可彎曲的關節。
+【例句】I hurt my knee when I fell off my bicycle. 我從腳踏車上摔下來時傷到了膝蓋。"
+listen,"listen (v.) 聆聽
+【發音】/ lis / ten /
+【字義】aud- (聽) -> 專注地接收聲音。
+【例句】Please listen carefully to what the teacher is saying. 請仔細聽老師正在說的話。"
+speak,"speak (v.) 講話
+【發音】/ sp / ea / k / (long e)
+【字義】phon- (聲音) 相關的語言表達動作。
+【例句】Can you speak English with me for five minutes? 你可以跟我說五分鐘的英文嗎？"
+touch,"touch (v.) 觸碰
+【發音】/ t / ou / ch /
+【字義】用身體部位（尤其是手）接觸某物。
+【例句】Please do not touch the paintings in the museum. 請不要觸碰博物館裡的畫作。"
+think,"think (v.) 思考
+【發音】/ th / i / nk / (short i)
+【字義】psych- (心智) 運作的過程。
+【例句】Let me think about your question before I answer. 在我回答之前，讓我思考一下你的問題。"
+laugh,"laugh (v.) 嘲笑；大笑
+【發音】/ l / au / gh / (special a)
+【字義】發出笑聲，有時指嘲弄。
+【例句】Everyone laughed when the clown tripped over his own feet. 當小丑被自己的腳絆倒時，每個人都大笑起來。"
+point,"point (v.) 指出
+【發音】/ p / oi / nt / (oy/oi special o)
+【字義】用手指或其他工具指向某物。
+【例句】Can you point to the country you want to visit on the map? 你可以在地圖上指出你想要造訪的國家嗎？"
+eye(s),"eye(s) (n.) 眼睛
+【發音】/ eye / (long e)
+【字義】vis- (看) 的器官。
+【例句】Your eyes are red. Did you stay up late playing video games? 你的眼睛紅紅的，你昨晚熬夜玩電動了嗎？"
+mouth,"mouth (n.) 嘴巴
+【發音】/ m / ou / th /
+【字義】人臉上用來進食和說話的部位。
+【例句】Don't talk with your mouth full of food! 不要嘴裡塞滿食物時說話！"
+neck,"neck (n.) 脖子
+【發音】/ n / e / ck / (short e)
+【字義】連接頭部與身體的部位。
+【例句】Giraffes have very long necks to reach the leaves. 長頸鹿有很長的脖子來吃到樹葉。"
+hand,"hand (n.) 手
+【發音】/ h / a / nd / (short a)
+【字義】manu- (手) -> 用來拿東西的部位。
+【例句】Wash your hands before you eat that sandwich. 在你吃那份三明治之前先洗手。"
+stomach,"stomach (n.) 胃
+【發音】/ stom / ach /
+【字義】腹部用來消化食物的器官。
+【例句】My stomach hurts because I ate too much ice cream. 我的胃很痛，因為我吃了太多的冰淇淋。"
+foot,"foot (n.) 腳
+【發音】/ f / oo / t / (long o)
+【字義】ped- (足) -> 腿部最下端用來站立的部位。
+【例句】My left foot is slightly bigger than my right foot. 我的左腳比右腳稍微大一點。"
+smell,"smell (v.) 聞
+【發音】/ sm / e / ll / (short e)
+【字義】用鼻子感知氣味的動作。
+【例句】I can smell the cookies baking from my bedroom. 我在臥室就能聞到烤餅乾的味道。"
+talk,"talk (v.) 談話
+【發音】/ t / a / lk / (special a)
+【字義】logue- (說) -> 與他人進行言語交流。
+【例句】Stop talking and focus on your test! 停止說話，專心做你的測驗！"
+walk,"walk (v.) 走路
+【發音】/ w / a / lk / (special a)
+【字義】grad- (步) -> 雙腳交替移動的動作。
+【例句】Let's walk to school today instead of taking the bus. 我們今天走路去上學，不要搭公車了。"
+blind,"blind (adj.) 瞎的
+【發音】/ bl / i / nd / (special i)
+【字義】失去視覺能力的狀態。
+【例句】A guide dog helps blind people walk safely on the street. 導盲犬幫助盲人在街上安全地行走。"
+hold,"hold (v.) 握住
+【發音】/ h / o / ld / (special o)
+【字義】ten- (持有) -> 用手抓牢某物。
+【例句】Please hold my hand when we cross the busy street. 當我們穿過繁忙的街道時，請牽著我的手。"
+brush,"brush (v./n.) 刷；刷子
+【發音】/ br / u / sh / (short u)
+【字義】用刷子清理或整理的動作。
+【例句】Remember to brush your teeth every morning and night. 記得每天早晚刷牙。"
+time,"time (n.) 時間
+【發音】/ t / i_e / m / (long i)
+【字義】基本單字
+【例句】I don't have enough time to finish my homework. 我沒有足夠的時間完成功課。"
+minute,"minute (n.) 分鐘
+【發音】/ m / i / n / u / t / e / (short i)
+【字義】基本單字
+【例句】Please wait for a minute; I am almost ready. 請等我一分鐘，我快好了。"
+hour,"hour (n.) 小時
+【發音】/ h (silent) / ou / r / (ou 組合)
+【字義】基本單字
+【例句】It takes one hour to go to Taipei by train. 搭火車去台北需要一小時。"
+o'clock,"o'clock (adv.) 點鐘
+【發音】/ o / cl / o / ck / (blend cl, short o)
+【字義】of the clock 的縮寫。
+【例句】It is seven o'clock, time to get up! 現在是七點鐘，該起床了！"
+watch,"watch (n.) 錶
+【發音】/ w / a / tch / (digraph tch)
+【字義】基本單字
+【例句】My father gave me a new watch for my birthday. 我爸爸送我一支新手錶當作生日禮物。"
+clock,"clock (n.) 時鐘
+【發音】/ cl / o / ck / (blend cl, short o)
+【字義】基本單字
+【例句】The clock on the wall is five minutes fast. 牆上的時鐘快了五分鐘。"
+noon,"noon (n.) 中午
+【發音】/ n / oo / n / (long o: oo)
+【字義】基本單字
+【例句】We usually have lunch at noon. 我們通常在中午吃午餐。"
+afternoon,"afternoon (n.) 下午
+【發音】/ af / ter / noon / (r-control er, long o: oo)
+【字義】after (之後) + noon (中午) -> 中午之後。
+【例句】I have a basketball game this afternoon. 我今天下午有一場籃球比賽。"
+morning,"morning (n.) 早晨
+【發音】/ m / or / n / i / ng / (r-control or, digraph ng)
+【字義】基本單字
+【例句】I like to drink milk in the morning. 我喜歡在早晨喝牛奶。"
+night,"night (n.) 夜晚
+【發音】/ n / igh / t / (special i: igh)
+【字義】基本單字
+【例句】Stars shine brightly at night. 星星在夜晚閃閃發光。"
+eve,"eve (n.) 前夕
+【發音】/ e_e / v / e / (long e: e_e)
+【字義】基本單字
+【例句】We have a big dinner on Christmas Eve. 我們在聖誕夜吃大餐。"
+evening,"evening (n.) 傍晚
+【發音】/ e / v / e / n / i / ng / (short e, digraph ng)
+【字義】基本單字
+【例句】I enjoy taking a walk in the evening. 我喜歡在傍晚散步。"
+day,"day (n.) 一天
+【發音】/ d / ay / (long a: ay)
+【字義】基本單字
+【例句】Today is a beautiful day. 今天是美好的一天。"
+week,"week (n.) 星期
+【發音】/ w / ee / k / (long e: ee)
+【字義】基本單字
+【例句】There are seven days in a week. 一個星期有七天。"
+tonight,"tonight (adv./n.) 今晚
+【發音】/ t / o / n / igh / t / (special i: igh)
+【字義】to (到) + night (夜晚) -> 來到這個夜晚。
+【例句】Are you going to the party tonight? 你今晚要去參加派對嗎？"
+year,"year (n.) 年
+【發音】/ y / ea / r / (long e: ea)
+【字義】基本單字
+【例句】I am eleven years old this year. 我今年十一歲。"
+yesterday,"yesterday (n./adv.) 昨天
+【發音】/ y / e / s / ter / d / ay / (short e, r-control er, long a ay)
+【字義】yester (過去的) + day (日子)。
+【例句】It was rainy yesterday, so we stayed home. 昨天下雨，所以我們待在家。"
+month,"month (n.) 月
+【發音】/ m / o / n / th / (digraph th)
+【字義】基本單字
+【例句】My birthday is next month. 我的生日在下個月。"
+tomorrow,"tomorrow (n./adv.) 明天
+【發音】/ t / o / m / o / rr / ow / (long o: ow)
+【字義】to (到) + morrow (早晨/明日)。
+【例句】We will go to the zoo tomorrow. 我們明天要去動物園。"
+Monday,"Monday (n.) 星期一
+【發音】/ M / o / n / d / ay / (long a: ay)
+【字義】Moon (月亮) + day (日子)。
+【例句】Monday is the first day of school every week. 星期一律是每週上學的第一天。"
+Tuesday,"Tuesday (n.) 星期二
+【發音】/ T / ue / s / d / ay / (long u: ue, long a ay)
+【字義】Tuesday 源自戰神之日。
+【例句】I have a piano lesson on Tuesday. 我星期二有鋼琴課。"
+Wednesday,"Wednesday (n.) 星期三
+【發音】/ W / e / d / n / e / s / d / ay / (short e, long a ay)
+【字義】源自北歐神話奧丁之日。
+【例句】We have a half-day of school on Wednesday. 我們星期三只上半天課。"
+Thursday,"Thursday (n.) 星期四
+【發音】/ Th / ur / s / d / ay / (digraph th, r-control ur, long a ay)
+【字義】源自雷神 Thor 之日。
+【例句】Mom goes to the supermarket every Thursday. 媽媽每個星期四都去超市。"
+Friday,"Friday (n.) 星期五
+【發音】/ F / r / i / d / ay / (long i: y, long a ay)
+【字義】源自女神 Frigg 之日。
+【例句】Friday is my favorite day because the weekend is coming. 星期五是我最日子，因為週末快到了。"
+Saturday,"Saturday (n.) 星期六
+【發音】/ S / a / t / ur / d / ay / (short a, r-control ur, long a ay)
+【字義】源自土星 Saturn 之日。
+【例句】I usually go to the park on Saturday. 我通常星期六去公園。"
+Sunday,"Sunday (n.) 星期天
+【發音】/ S / u / n / d / ay / (short u, long a ay)
+【字義】Sun (太陽) + day (日子)。
+【例句】We go to church on Sunday morning. 我們星期天早上會去教堂。"
+today,"today (n./adv.) 今天
+【發音】/ t / o / d / ay / (long a: ay)
+【字義】to (到) + day (日子)。
+【例句】Today is my best friend's birthday. 今天是我最好的朋友的生日。"
+weekend,"weekend (n.) 週末
+【發音】/ w / ee / k / e / n / d / (long e: ee, short e)
+【字義】week (星期) + end (結束) -> 一星期的結束。
+【例句】What are your plans for the weekend? 你週末有什麼計畫嗎？"
+Christmas,"Christmas (n.) 聖誕節
+【發音】/ Ch / r / i / s / t / m / a / s / (digraph ch, short i, short a)
+【字義】Christ (基督) + mas (節日)。
+【例句】I want a robot for Christmas. 聖誕節我想要一個機器人。"
+gift,"gift (n.) 禮物
+【發音】/ g / i / f / t / (short i)
+【字義】基本單字
+【例句】This gift is for you; I hope you like it. 這個禮物是給你的，希望你喜歡。"
+season,"season (n.) 季節
+【發音】/ s / ea / s / o / n / (long e: ea)
+【字義】基本單字
+【例句】My favorite season is spring because of the flowers. 我最喜歡的季節是春天，因為有花。"
+spring,"spring (n.) 春天
+【發音】/ s / p / r / i / ng / (blend spr, short i, digraph ng)
+【字義】基本單字
+【例句】The trees turn green in spring. 樹木在春天變綠。"
+summer,"summer (n.) 夏天
+【發音】/ s / u / mm / er / (short u, r-control er)
+【字義】基本單字
+【例句】We like to go swimming in the summer. 我們喜歡在夏天去游泳。"
+autumn / fall,"autumn / fall (n.) 秋天
+【發音】/ au / t / u / mn / (special a: au) ; / f / a / ll / (special a: all)
+【字義】fall 源自落葉 (fall of leaves)。
+【例句】The leaves turn yellow in autumn. 秋天時葉子會變黃。"
+winter,"winter (n.) 冬天
+【發音】/ w / i / n / t / er / (short i, r-control er)
+【字義】基本單字
+【例句】It is very cold in winter. 冬天非常冷。"
+date,"date (n.) 日期
+【發音】/ d / a_e / t / e / (long a: a_e)
+【字義】基本單字
+【例句】What is the date today? 今天是幾月幾號？"
+birthday,"birthday (n.) 生日
+【發音】/ b / ir / th / d / ay / (r-control ir, digraph th, long a ay)
+【字義】birth (出生) + day (日子)。
+【例句】We will have a party for my birthday. 我們會辦一個生日派對。"
+holiday,"holiday (n.) 節日
+【發音】/ h / o / l / i / d / ay / (short o, long a ay)
+【字義】holy (神聖的) + day (日子)。
+【例句】Tomorrow is a national holiday, so no school! 明天是國定假日，所以不用上學！"
+vacation,"vacation (n.) 假期
+【發音】/ v / a / c / a / tion / (suffix tion)
+【字義】vac (空) + -ation (名詞) -> 空出來的時間。
+【例句】We went to Japan for our summer vacation. 我們暑假去了日本。"
+future,"future (n.) 未來
+【發音】/ f / u / t / ure / (long u: single)
+【字義】基本單字
+【例句】I want to be a doctor in the future. 我未來想當一名醫生。"
+before,"before (prep./conj.) 以前
+【發音】/ b / e / f / or / e / (r-control or)
+【字義】be- (在) + fore (前面)。
+【例句】Wash your hands before dinner. 晚餐前要洗手。"
+after,"after (prep./conj.) 之後
+【發音】/ af / ter / (short a, r-control er)
+【字義】基本單字
+【例句】I will go to the park after I finish my work. 我做完功課後會去公園。"
+past,"past (n./adj.) 過去
+【發音】/ p / a / s / t / (short a)
+【字義】基本單字
+【例句】In the past, there were no computers. 在過去，沒有電腦。"
+center,"center (n.) 中央
+【發音】/ c / en / ter / (short e, r-control er)
+【字義】基本單字
+【例句】The statue is in the center of the square. 雕像在廣場中央。"
+left,"left (n./adj.) 左邊
+【發音】/ l / e / f / t / (short e)
+【字義】基本單字
+【例句】Please turn left at the corner. 請在轉角處左轉。"
+right,"right (n./adj.) 右邊
+【發音】/ r / igh / t / (special i: igh)
+【字義】基本單字
+【例句】Use your right hand to hold the pen. 用你的右手拿筆。"
+south,"south (n./adj.) 南方
+【發音】/ s / ou / th / (long o: ou, digraph th)
+【字義】基本單字
+【例句】Birds fly south for the winter. 鳥兒在冬天往南飛。"
+east,"east (n./adj.) 東方
+【發音】/ ea / s / t / (long e: ea)
+【字義】基本單字
+【例句】The sun rises in the east. 太陽從東方升起。"
+west,"west (n./adj.) 西方
+【發音】/ w / e / s / t / (short e)
+【字義】基本單字
+【例句】The sun sets in the west. 太陽從西方落下。"
+north,"north (n./adj.) 北方
+【發音】/ n / or / th / (r-control or, digraph th)
+【字義】基本單字
+【例句】Taipei is in the north of Taiwan. 台北在台灣的北部。"
+driver,"driver (n.) 司機
+【發音】/ dr / i_e / v / er / (blend dr, long i i_e, r-control er)
+【字義】drive (駕駛) + -er (做某事的人) -> 駕駛的人。
+【例句】The taxi driver is very friendly. 那位計程車司機非常友善。"
+farmer,"farmer (n.) 農夫
+【發音】/ f / ar / m / er / (r-control ar, r-control er)
+【字義】farm (農場) + -er (做某事的人) -> 在農場工作的人。
+【例句】The farmer grows many watermelons. 那個農夫種了很多西瓜。"
+leader,"leader (n.) 領導人
+【發音】/ l / ea / d / er / (long e ea, r-control er)
+【字義】lead (領導) + -er (做某事的人) -> 領導的人。
+【例句】He is the leader of our basketball team. 他是我們籃球隊的隊長。"
+officer,"officer (n.) 官員
+【發音】/ o / ffi / c / er / (short o, r-control er)
+【字義】office (辦公室/職位) + -er (人)。
+【例句】The police officer helped me find my way. 那名警察幫助我找到了路。"
+shopkeeper,"shopkeeper (n.) 店主
+【發音】/ sh / o / p / k / ee / p / er / (digraph sh, short o, long e ee, r-control er)
+【字義】shop (商店) + keep (經營) + -er (人) -> 經營商店的人。
+【例句】The shopkeeper is closing the door now. 店主現在正在關門。"
+singer,"singer (n.) 歌手
+【發音】/ s / i / ng / er / (short i, digraph ng, r-control er)
+【字義】sing (唱歌) + -er (人) -> 唱歌的人。
+【例句】Jay Chou is a famous singer. 周杰倫是一位著名的歌手。"
+waiter,"waiter (n.) 男服務生
+【發音】/ w / ai / t / er / (long a ai, r-control er)
+【字義】wait (服侍) + -er (人)。
+【例句】The waiter brought us some water. 男服務生給我們帶了一些水。"
+waitress,"waitress (n.) 女服務生
+【發音】/ w / ai / t / ress / (long a ai)
+【字義】wait (服侍) + -ress (女性後綴)。
+【例句】The waitress smiled and took our order. 女服務生微笑著幫我們點餐。"
+worker,"worker (n.) 工人
+【發音】/ w / or / k / er / (r-control or, r-control er)
+【字義】work (工作) + -er (人) -> 工作的人。
+【例句】The factory workers are very busy. 工廠的工人們非常忙碌。"
+doctor,"doctor (n.) 醫生
+【發音】/ d / o / c / t / or / (short o, r-control or)
+【字義】源自拉丁文「教導」之意，現代指醫生。
+【例句】I need to see a doctor because I have a fever. 我發燒了，需要去看醫生。"
+fisherman,"fisherman (n.) 漁夫
+【發音】/ f / i / sh / er / m / a / n / (short i, digraph sh, r-control er)
+【字義】fish (魚) + -er (人) + man (男人) -> 捕魚的人。
+【例句】The fisherman caught a big fish today. 漁夫今天捕到一條大魚。"
+writer,"writer (n.) 作家
+【發音】/ w / r / i_e / t / er / (silent w, long i i_e, r-control er)
+【字義】write (寫) + -er (人) -> 寫作的人。
+【例句】She wants to be a writer when she grows up. 她長大後想成為一名作家。"
+nurse,"nurse (n.) 護士
+【發音】/ n / ur / s / e / (r-control ur)
+【字義】基本單字
+【例句】The nurse gave me a bandage for my cut. 護士給了我的傷口一張OK繃。"
+police man,"police man (n.) 警察
+【發音】/ p / o / l / i / c / e / m / a / n / (long e: i_e, short a)
+【字義】police (警察機關) + man (男人)。
+【例句】The police man caught the bad guy. 那位警察抓住了壞人。"
+boss,"boss (n.) 老闆
+【發音】/ b / o / ss / (short o)
+【字義】基本單字
+【例句】My boss is very strict about work. 我的老闆對工作非常嚴格。"
+salesman,"salesman (n.) 推銷員
+【發音】/ s / a_e / l / e / s / m / a / n / (long a a_e, short a)
+【字義】sale (銷售) + -s- + man (人)。
+【例句】The salesman is trying to sell a new car. 那位推銷員正試著賣出一輛新車。"
+cook,"cook (n.) 廚師
+【發音】/ c / oo / k / (long o: oo)
+【字義】基本單字。注意：cooker 是鍋具。
+【例句】My uncle is a great cook at a restaurant. 我叔叔是一家餐廳的很棒的廚師。"
+fireman,"fireman (n.) 消防員
+【發音】/ f / i_e / r / e / m / a / n / (long i i_e, short a)
+【字義】fire (火) + man (男人) -> 滅火的人。
+【例句】The fireman put out the fire quickly. 消防員很快地撲滅了火。"
+soldier,"soldier (n.) 軍人
+【發音】/ s / o / l / d / ie / r / (long o: single, r-control er)
+【字義】基本單字
+【例句】The soldier protects our country. 軍人保衛我們的國家。"
+menu,"menu (n.) 菜單
+【發音】/ me / nu / (short e, long u)
+【例句】The cat looked at the menu and ordered a giant fish. 這隻貓看著菜單，點了一條大魚。"
+food,"food (n.) 食物
+【發音】/ food / (long o-oo)
+【例句】My dog thinks everything on the floor is free food. 我的狗覺得地板上所有的東西都是免費食物。"
+meal,"meal (n.) 一餐
+【發音】/ meal / (long e-ea)
+【例句】Breakfast is my favorite meal because I love eggs. 早餐是我最喜歡的一餐，因為我愛雞蛋。"
+breakfast,"breakfast (n.) 早餐
+【發音】/ break / fast / (ea-short, short a)
+【字義】break (打破) + fast (禁食，見字根表) -> 打破昨晚禁食的第一餐。
+【例句】I ate so much breakfast that I can't even move. 我早餐吃太多了，現在連動都動不了。"
+lunch,"lunch (n.) 午餐
+【發音】/ lunch / (short u-un)
+【例句】I forgot my lunch, so I had to imagine eating a pizza. 我忘了帶午餐，所以我只好幻想自己在吃披薩。"
+dinner,"dinner (n.) 晚餐
+【發音】/ din / ner / (short i, er-control)
+【字義】din + -er (做某事物的東西) -> 每日主要的一餐。
+【例句】We had dinosaur-shaped nuggets for dinner tonight! 我們今晚晚餐吃了恐龍形狀的雞塊！"
+noodles,"noodles (n.) 麵條
+【發音】/ noo / dles / (long o-oo, le-control)
+【例句】Eating noodles quietly is a superpower I don't have. 安靜地吃麵是我不具備的一種超能力。"
+rice,"rice (n.) 米飯
+【發音】/ rice / (long i-i_e)
+【例句】I tried to count the rice in my bowl but fell asleep. 我試著數碗裡的米飯，結果數到睡著了。"
+hamburger,"hamburger (n.) 漢堡
+【發音】/ ham / bur / ger / (short a, ur-control, er-control)
+【字義】ham (火腿/漢堡市) + -er (物品) -> 一種來自漢堡市的肉餅點心。
+【例句】This hamburger is so big I need a ladder to eat it. 這個漢堡大到我需要梯子才能吃完它。"
+pie,"pie (n.) 派
+【發音】/ pie / (long i-ie)
+【例句】The clown threw a cream pie right at my nose! 小丑直接把一個鮮奶油派丟在我的鼻子上！"
+pizza,"pizza (n.) 披薩
+【發音】/ piz / za / (short i)
+【例句】Is pizza a vegetable? I hope the answer is yes. 披薩算是蔬菜嗎？我希望答案是「是」。"
+sandwich,"sandwich (n.) 三明治
+【發音】/ sand / wich / (short a-an, short i-ich)
+【例句】I put too much jam in my sandwich, and now it's leaking. 我在三明治裡放了太多果醬，現在它一直在漏。"
+meat,"meat (n.) 肉
+【發音】/ meat / (long e-ea)
+【例句】If you don't eat your meat, you can't have any pudding! 如果你不吃肉，就不能吃布丁！"
+beef,"beef (n.) 牛肉
+【發音】/ beef / (long e-ee)
+【例句】My brother says beef makes him strong like a bull. 我弟說牛肉讓他變得像公牛一樣強壯。"
+chicken,"chicken (n.) 雞肉
+【發音】/ chick / en / (short i, short e-en)
+【字義】chick (小雞) + -en (使成為/名詞化) -> 雞的肉。
+【例句】Why did the chicken cross the road? To get away from the KFC! 為什麼雞要過馬路？為了逃離肯德基！"
+pork,"pork (n.) 豬肉
+【發音】/ pork / (or-control)
+【例句】I like pork chops, but the pig probably doesn't. 我喜歡豬排，但豬本人可能不喜歡。"
+steak,"steak (n.) 牛排
+【發音】/ steak / (special ea - sounds like long a)
+【例句】I asked for a rare steak, but the cow is still mooing! 我點了三分熟牛排，但這頭牛還在「哞哞」叫！"
+hot dog,"hot dog (n.) 熱狗
+【發音】/ hot / dog / (short o, short o)
+【例句】My little sister thought hot dogs were made of real puppies. 我妹妹以前以為熱狗真的是用小狗做的。"
+bread,"bread (n.) 麵包
+【發音】/ bread / (short e-ea)
+【例句】The bread was so hard I used it as a hammer. 這麵包硬到我把它當鐵鎚用。"
+butter,"butter (n.) 奶油
+【發音】/ but / ter / (short u, er-control)
+【例句】Everything tastes better with a mountain of butter. 放了一大堆奶油後，什麼東西都變得更好吃了。"
+cheese,"cheese (n.) 起士
+【發音】/ cheese / (long e-ee)
+【例句】Say 'cheese' for the camera, or I'll eat your pizza! 對著鏡頭說「起士」，不然我就要吃掉你的披薩！"
+egg,"egg (n.) 雞蛋
+【發音】/ egg / (short e-single)
+【例句】I accidentally dropped an egg on my teacher's shoe. 我不小心把一顆蛋掉在老師的鞋子上。"
+ham,"ham (n.) 火腿
+【發音】/ ham / (short a-CVC)
+【例句】The ham in this sandwich is thinner than my homework. 這三明治裡的火腿比我的作業還要薄。"
+salt,"salt (n.) 鹽巴
+【發音】/ salt / (special a-al)
+【例句】I put salt in my coffee by mistake, and it was gross. 我不小心在咖啡裡加了鹽，超難喝的。"
+sugar,"sugar (n.) 糖
+【發音】/ su / gar / (short u, ar-control)
+【例句】My mom says I'm made of sugar because I'm so sweet. 我媽說我是糖做的，因為我太貼心了。"
+oil,"oil (n.) 油
+【發音】/ oil / (special o-oi)
+【例句】Be careful not to spill the oil, or the kitchen will become a skating rink. 小心別灑了油，不然廚房會變成溜冰場。"
+snack,"snack (n.) 點心
+【發音】/ snack / (short a-CVC)
+【例句】I have a secret snack hidden inside my sock. 我在襪子裡藏了一個秘密點心。"
+cake,"cake (n.) 蛋糕
+【發音】/ cake / (long a-a_e)
+【例句】I ate the whole cake and now I look like a balloon. 我吃光了整個蛋糕，現在看起來像個氣球。"
+candy,"candy (n.) 糖果
+【發音】/ can / dy / (short a, long e-y)
+【例句】Taking candy from a baby is easy, but the baby will cry a lot. 搶走小嬰兒的糖果很容易，但他會哭得很慘。"
+chocolate,"chocolate (n.) 巧克力
+【發音】/ choc / o / late / (short o, long a-a_e)
+【例句】Chocolate is the answer to all of life's problems. 巧克力是生命中所有問題的答案。"
+cookie,"cookie (n.) 餅乾
+【發音】/ cook / ie / (short o-oo, long e-ie)
+【例句】Who stole the cookie from the cookie jar? It wasn't me! 是誰偷了餅乾罐裡的餅乾？不是我！"
+ice cream,"ice cream (n.) 冰淇淋
+【發音】/ ice / cream / (long i-i_e, long e-ea)
+【字義】ice (冰) + cream (奶油) -> 冰凍的奶油甜點。
+【例句】My ice cream melted so fast it became a soup. 我的冰淇淋融化太快，直接變成了湯。"
+popcorn,"popcorn (n.) 爆米花
+【發音】/ pop / corn / (short o, or-control)
+【例句】Watching a movie without popcorn is like a day without sunshine. 看電影沒爆米花就像日子沒有陽光一樣。"
+fruit,"fruit (n.) 水果
+【發音】/ fruit / (long u-ui)
+【例句】Knowledge is knowing a tomato is a fruit; wisdom is not putting it in a fruit salad. 知識是知道番茄是水果；智慧則是不要把它放進水果沙拉裡。"
+apple,"apple (n.) 蘋果
+【發音】/ ap / ple / (short a, le-control)
+【例句】An apple a day keeps the doctor away, especially if you throw it hard enough. 一天一蘋果，醫生遠離我；尤其是當你丟得夠準的時候。"
+banana,"banana (n.) 香蕉
+【發音】/ ba / na / na / (short a)
+【例句】I slipped on a banana peel just like in the cartoons! 我踩到香蕉皮滑倒了，就像卡通裡演的一樣！"
+lemon,"lemon (n.) 檸檬
+【發音】/ le / mon / (short e, short o)
+【例句】When life gives you lemons, make lemonade and sell it for a dollar! 當生命給你檸檬，就做成檸檬汁賣一塊錢！"
+orange,"orange (n.) 柳丁/橘子
+【發音】/ or / ange / (or-control, long a-a_e)
+【例句】Orange you glad I didn't say banana again? 橘子（諧音：你不覺得）慶幸我沒再說一次香蕉嗎？"
+tomato,"tomato (n.) 番茄
+【發音】/ to / ma / to / (long a, long o)
+【例句】Is it 'to-may-to' or 'to-mah-to'? Let's just call it a red ball. 是唸「tomeyto」還是「tomahto」？我們乾脆叫它紅球吧。"
+salad,"salad (n.) 沙拉
+【發音】/ sa / lad / (short a, short a)
+【例句】I ordered a salad, but I accidentally got a hamburger instead. 我點了沙拉，但不小心手滑點成了漢堡。"
+vegetable,"vegetable (n.) 蔬菜
+【發音】/ veg / e / ta / ble / (short e, le-control)
+【字義】veget (生長) + -able (能夠...的) -> 能夠生長出的植物性食物。
+【例句】I told my teacher that French fries are my favorite vegetable. 我告訴老師薯條是我最喜歡的蔬菜。"
+drink,"drink (v./n.) 喝/飲料
+【發音】/ drink / (short i-in)
+【例句】I'm so thirsty I could drink the entire ocean. 我渴到可以喝乾整座海洋。"
+coke,"coke (n.) 可口可樂
+【發音】/ coke / (long o-o_e)
+【例句】I opened the coke and it sprayed all over my cat. 我打開可樂，結果噴得我家的貓全身都是。"
+coffee,"coffee (n.) 咖啡
+【發音】/ cof / fee / (short o, long e-ee)
+【例句】My dad turns into a zombie if he doesn't have his morning coffee. 我爸要是早上沒喝咖啡，就會變成殭屍。"
+juice,"juice (n.) 果汁
+【發音】/ juice / (long u-ui)
+【例句】I like apple juice, but my shirt doesn't like it when I spill it. 我喜歡蘋果汁，但我的衣服不喜歡我把它灑出來。"
+milk,"milk (n.) 牛奶
+【發音】/ milk / (short i-ill)
+【例句】Drinking milk makes your bones strong, but it won't make you fly. 喝牛奶會讓骨頭強壯，但不會讓你飛起來。"
+soup,"soup (n.) 湯
+【發音】/ soup / (long o-oo sound)
+【例句】There is a fly in my soup, and he's doing the backstroke! 我的湯裡有一隻蒼蠅，而且牠正在游仰式！"
+tea,"tea (n.) 茶
+【發音】/ tea / (long e-ea)
+【例句】Would you like a cup of tea or a cup of trouble? 你想要一杯茶還是一杯麻煩？"
+bottle,"bottle (n.) 瓶子
+【發音】/ bot / tle / (short o, le-control)
+【例句】I found a message in a bottle, but it was just a pizza menu. 我在瓶子裡發現一個訊息，結果只是披薩選單。"
+bowl,"bowl (n.) 碗
+【發音】/ bowl / (long o-ow)
+【例句】My cereal bowl is so deep I can swim in it. 我的麥片碗深到我可以在裡面游泳。"
+knife,"knife (n.) 刀子
+【發音】/ knife / (long i-i_e, silent k)
+【例句】Never bring a knife to a pillow fight! 枕頭大戰時絕對不要帶刀子！"
+glass,"glass (n.) 玻璃杯
+【發音】/ glass / (short a, l-blend)
+【例句】The glass was so clean I accidentally walked into it. 玻璃太乾淨了，我不小心撞了上去。"
+spoon,"spoon (n.) 湯匙
+【發音】/ spoon / (long o-oo)
+【例句】I tried to eat my steak with a spoon, and it didn't go well. 我試著用湯匙吃牛排，結果不太順利。"
+garbage,"garbage (n.) 垃圾
+【發音】/ gar / bage / (ar-control)
+【例句】My room is so messy that the garbage truck tried to pick it up. 我的房間太亂了，垃圾車都想過來把它收走。"
+hungry,"hungry (adj.) 飢餓的
+【發音】/ hun / gry / (short u, long e-y)
+【例句】I'm so hungry I could eat a horse, or at least a very large cake. 我餓到可以吃掉一匹馬，或是至少一個超大的蛋糕。"
+full,"full (adj.) 吃飽的
+【發音】/ full / (short u-variant)
+【例句】I'm so full that if I eat one more pea, I might explode! 我太飽了，要是再吃一顆豌豆，我可能會爆炸！"
+papaya,"papaya (n.) 木瓜
+【發音】/ pa / pa / ya / (short a)
+【例句】Papayas look like green footballs full of black pearls. 木瓜看起來就像裝滿黑色珍珠的綠色美式足球。"
+delicious,"delicious (adj.) 美味地
+【發音】/ de / li / cious / (short e, short i, -ous)
+【字義】de- (加強意義) + delici (誘人) + -ous (充滿...的) -> 非常誘人且美味的。
+【例句】This cake is so delicious I want to marry it. 這蛋糕太美味了，我想跟它結婚。"
+fresh,"fresh (adj.) 新鮮的
+【發音】/ fresh / (short e, fr-blend)
+【例句】The air is so fresh here I can smell the grass growing. 這裡的空氣太新鮮了，我甚至能聞到草生長的聲音。"
+watermelon,"watermelon (n.) 西瓜
+【發音】/ wa / ter / mel / on / (short a, er-control, short e, short o)
+【字義】water (水) + melon (瓜) -> 水分很多的瓜。
+【例句】I ate too many watermelon seeds, so now I'm waiting for a plant to grow in my stomach. 我吃了太多西瓜籽，現在正等著肚子裡長出一棵苗。"
+sweet,"sweet (adj.) 甜的
+【發音】/ sweet / (long e-ee, sw-blend)
+【例句】This candy is so sweet it made my teeth do a happy dance. 這顆糖太甜了，甜到我的牙齒都在跳快樂舞。"
+thirsty,"thirsty (adj.) 口渴的
+【發音】/ thirs / ty / (ir-control, long e-y)
+【字義】thirst (渴) + -y (...的特質) -> 感到口渴的狀態。
+【例句】The desert is a very thirsty place for a penguin. 對於企鵝來說，沙漠是個會讓人感到非常口渴的地方。"
+mango,"mango (n.) 芒果
+【發音】/ man / go / (short a-an, long o)
+【例句】I love mangoes because they are like sunshine you can eat. 我愛芒果，因為它們就像可以吃的陽光。"
+grape,"grape (n.) 葡萄
+【發音】/ grape / (long a-a_e, gr-blend)
+【例句】The grape was tired of being small, so it decided to become a raisin. 葡萄厭倦了當小孩，所以決定變成長大的葡萄乾。"
+guava,"guava (n.) 芭樂
+【發音】/ gua / va / (short a)
+【例句】My grandma says eating guavas makes your voice sound beautiful. 我奶奶說吃芭樂會讓你的聲音變好聽。"
+pineapple,"pineapple (n.) 鳳梨
+【發音】/ pine / ap / ple / (long i-i_e, short a, le-control)
+【字義】pine (松樹) + apple (蘋果) -> 長得像松果的蘋果狀水果。
+【例句】Who lives in a pineapple under the sea? SpongeBob SquarePants! 是誰住在深海的大鳳梨裡？海綿寶寶！"
+peach,"peach (n.) 水蜜桃
+【發音】/ peach / (long e-ea, ch-digraph)
+【例句】The peach is so fuzzy it needs a tiny shave. 這水蜜桃毛多到需要刮鬍子。"
+strawberry,"strawberry (n.) 草莓
+【發音】/ straw / ber / ry / (special a-aw, er-control, long e-y)
+【字義】straw (稻草) + berry (漿果) -> 一種常被鋪在稻草上生長的漿果。
+【例句】I put a strawberry on my head and called myself a sundae. 我把一顆草莓放在頭上，然後叫自己「聖代」。"
+kiwi,"kiwi (n.) 奇異果
+【發音】/ ki / wi / (long e, long e)
+【例句】The kiwi looks like a hairy potato on the outside, but it's a party on the inside. 奇異果外面看起像長毛的馬鈴薯，裡面卻像在開派對。"
+airplane / plane,"airplane / plane (n.) 飛機
+【發音】/ air / plane / (air-control, long a-a_e)
+【字義】air (空氣) + plane (平面) -> 在空氣中飛行的平面機器。
+【例句】I want to travel by airplane, but my cat is afraid of heights. 我想搭飛機去旅行，但我家的貓恐高。"
+bicycle / bike,"bicycle / bike (n.) 腳踏車
+【發音】/ bi / cy / cle / (long i, long e-y, le-control)
+【字義】bi- (二，見字首表) + cycle (圓圈) -> 兩個輪子的車。
+【例句】My bicycle is so old that even the snails can pass me. 我的腳踏車太老了，連蝸牛都能超我車。"
+boat,"boat (n.) 小船
+【發音】/ boat / (long o-oa)
+【例句】We need a bigger boat, or we will have to swim with the sharks! 我們需要一艘大點的船，不然我們就得跟鯊魚一起游泳了！"
+bus,"bus (n.) 公車
+【發音】/ bus / (short u-CVC)
+【例句】The school bus smells like old socks and adventure. 校車聞起來有舊襪子和冒險的味道。"
+car,"car (n.) 汽車
+【發音】/ car / (ar-control)
+【例句】My dad's car is so small it looks like a giant toy. 我爸的車小到看起來像個巨大的玩具。"
+motorcycle,"motorcycle (n.) 重型機車
+【發音】/ mo / tor / cy / cle / (long o, or-control, long e-y, le-control)
+【字義】motor (馬達) + cycle (輪子) -> 有馬達的二輪車。
+【例句】The bear rode a motorcycle and everyone clapped their hands. 熊騎著重型機車，大家都拍手叫好。"
+ship,"ship (n.) 船
+【發音】/ ship / (short i, sh-digraph)
+【例句】The giant ship looked like a floating building on the ocean. 那艘巨輪看起來像海上漂浮的建築物。"
+taxi,"taxi (n.) 計程車
+【發音】/ tax / i / (short a, long e)
+【例句】I waved at a taxi, but a pizza delivery guy stopped instead. 我對計程車招手，結果停下來的是披薩外送員。"
+train,"train (n.) 火車
+【發音】/ train / (long a-ai, tr-blend)
+【例句】The train was so long it had two different time zones. 這列火車太長了，長到頭尾有兩個時區。"
+truck,"truck (n.) 卡車
+【發音】/ truck / (short u, tr-blend, ck-digraph)
+【例句】The monster truck jumped over ten school buses! 那輛大腳卡車跳過了十輛校車！"
+airport,"airport (n.) 機場
+【發音】/ air / port / (air-control, or-control)
+【字義】air (空氣) + port (港口/攜帶) -> 飛機起降的港口。
+【例句】The airport is the only place where it's okay to wear pajamas in public. 機場是唯一可以在公共場合穿睡衣的地方。"
+scooter,"scooter (n.) 輕型機車/滑板車
+【發音】/ scoo / ter / (long o-oo, er-control, sc-blend)
+【字義】scoot (快走) + -er (工具) -> 讓人能快速移動的工具。
+【例句】I saw a squirrel riding a tiny red scooter today. 我今天看到一隻松鼠騎著紅色的小型機車。"
+traffic,"traffic (n.) 交通
+【發音】/ traf / fic / (short a, short i, tr-blend)
+【例句】The traffic was so bad I finished my homework while waiting. 交通太糟了，我在等待的時候就把功課寫完了。"
+MRT,"MRT (n.) 大眾捷運
+【發音】/ M / R / T / (letter names)
+【例句】Taking the MRT is faster than walking on your hands. 搭捷運比用手走路要快多了。"
+station,"station (n.) 車站
+【發音】/ sta / tion / (long a, -tion)
+【字義】stat (站立) + -tion (名詞/狀態) -> 讓車停下來站立的地方。
+【例句】I stood at the train station for an hour before I realized I was at the bus stop. 我在火車站等了一小時才發現我人在公車站。"
+internet,"internet (n.) 網際網路
+【發音】/ in / ter / net / (short i, er-control, short e)
+【字義】inter- (在...之間，見字首表) + net (網) -> 互相連結的網絡。
+【例句】The internet is like a library with no quiet rules. 網際網路就像一個沒有安靜規則的圖書館。"
+school,"school (n.) 學校
+【發音】/ sk / oo / l /
+【字義】來自希臘語 skhole (閒暇/學習)。
+【例句】My school is so far that I have to wake up before the sun does. 我的學校太遠了，我必須在太陽公公起床前就起床。"
+elementary school,"elementary school (n.) 小學
+【發音】/ el / e / men / ta / ry / / sk / oo / l /
+【字義】elementary (基礎的/初步的) + school (學校)。
+【例句】In elementary school, the biggest problem is choosing which crayon to use. 在小學裡，最大的問題是決定要用哪一支蠟筆。"
+group,"group (n.) 團體；組
+【發音】/ g / r / ou / p /
+【字義】來自義大利語 gruppo (節/群)。
+【例句】Our study group spent two hours talking about snacks and five minutes studying math. 我們讀書小組花了兩小時聊零食，只花了五分鐘算數學。"
+math / mathematics,"math / mathematics (n.) 數學
+【發音】/ m / a / th / ; / ma / th / e / ma / tics /
+【字義】來自希臘語 mathema (知識/學習)。
+【例句】Math is the only place where someone buys 60 watermelons and no one asks why. 數學是唯一一個有人會買60顆西瓜，卻沒人問為什麼的地方。"
+bell,"bell (n.) 鐘聲；鈴
+【發音】/ b / e / ll /
+【字義】來自古英語 belle。
+【例句】The school bell is my favorite music because it means it's time to go home! 校鈴是我最愛的音樂，因為那代表放學時間到了！"
+pen,"pen (n.) 原子筆；筆
+【發音】/ p / e / n /
+【字義】來自拉丁語 penna (羽毛)。
+【例句】I have ten pens in my bag, but none of them work when I need to write. 我書包裡有十支筆，但需要寫字時沒一支能用。"
+list,"list (n.) 表；名單
+【發音】/ l / i / s / t /
+【字義】來自法語 liste (條幅/清單)。
+【例句】I made a list of things to do today, and the first thing is 'Take a nap'. 我列了一張今天要做的事項清單，第一件事就是「午睡」。"
+workbook,"workbook (n.) 習作本
+【發音】/ w / or / k / b / oo / k /
+【字義】work (工作/練習) + book (書)。
+【例句】My workbook is so clean because I haven't opened it since Monday. 我的習作本超乾淨，因為我從週一開始就沒打開過它。"
+sentence,"sentence (n.) 句子
+【發音】/ sen / ten / ce /
+【字義】來自拉丁語 sententia (意見/感覺)。
+【例句】Please write a long sentence, but don't just write 'Ahhhhhh' for ten lines. 請寫一個長句子，但不要只是寫十行的「啊～」。"
+PE (physical education),"PE (physical education) (n.) 體育課
+【發音】/ P / E /
+【字義】physical (身體的) + education (教育)。
+【例句】PE is the best class because I can run around and nobody tells me to sit down. 體育課是最棒的課，因為我可以亂跑卻沒人叫我坐下。"
+ask,"ask (v.) 詢問
+【發音】/ a / s / k /
+【字義】來自古英語 ascian。
+【例句】If you ask me where your socks are, I will tell you they are probably in the fridge. 如果你問我你的襪子在哪，我會告訴你它們可能在冰箱裡。"
+know,"know (v.) 知道
+【發音】/ kn / ow / (k不發音)
+【字義】來自原始印歐語 gno- (知道)。
+【例句】I know everything about dinosaurs, but I don't know where I put my shoes. 我對恐龍瞭若指掌，但我不知道我的鞋子放哪了。"
+repeat,"repeat (v.) 重複
+【發音】/ re / pea / t /
+【字義】re- (再次) + petere (去尋找) -> 再次做同樣的事。
+【例句】Could you repeat the question? I was busy watching a bird outside the window. 你能重複一下問題嗎？我剛剛正忙著看窗外的一隻鳥。"
+understand,"understand (v.) 了解
+【發音】/ un / der / s / t / an / d /
+【字義】under- (在...之下) + stand (站) -> 站在事物之中以看清真相。
+【例句】I understand the English teacher, but I don't understand why cats hate water. 我聽得懂英文老師在說什麼，但我搞不懂為什麼貓討厭水。"
+excellent,"excellent (adj.) 傑出的；優秀的
+【發音】/ ex / cell / ent /
+【字義】ex- (出/外) + cellere (升高) -> 高出於他人的。
+【例句】Your drawing of a square is excellent; it looks just like a real box! 你畫的正方形太傑出了，看起來就像個真的箱子！"
+grade,"grade (n.) 成績；分數
+【發音】/ g / r / a_e / d /
+【字義】來自拉丁語 gradus (步伐/等級)。
+【例句】My mom said if I get a good grade, she will buy me a giant ice cream. 我媽說如果我拿到好成績，她就買超大份冰淇淋給我。"
+problem,"problem (n.) 困難；問題
+【發音】/ p / r / o / b / lem /
+【字義】pro- (向前) + ballein (投擲) -> 投在面前需要解決的事。
+【例句】The only problem with my homework is that I don't want to do it. 我作業唯一的困難就是我不想寫。"
+colored pencil,"colored pencil (n.) 色鉛筆
+【發音】/ co / lor / ed / / pen / cil /
+【字義】color (顏色) + pencil (鉛筆)。
+【例句】I used my colored pencils to draw a purple cat with green hair. 我用色鉛筆畫了一隻長著綠頭髮的紫色貓咪。"
+ready,"ready (adj.) 準備好的
+【發音】/ rea / dy /
+【字義】來自古英語 ræde (準備好騎行的)。
+【例句】I am ready for the test, as long as the test is about sleeping. 我準備好考試了，只要考試內容是關於睡覺的話。"
+glue,"glue (n.) 膠水
+【發音】/ g / l / ue /
+【字義】來自拉丁語 gluten (粘劑)。
+【例句】Be careful with the glue, or you might stick your fingers to your nose! 用膠水要小心，否則你可能會把手指黏到鼻子上！"
+notebook,"notebook (n.) 筆記本；筆記型電腦
+【發音】/ no / te / b / oo / k /
+【字義】note (筆記) + book (書)。
+【例句】I have a secret notebook, but I forgot where I hid it. 我有一本秘密筆記本，但我忘記我把它藏哪了。"
+class,"class (n.) 班級；課
+【發音】/ cl / a / ss /
+【字義】來自拉丁語 classis (召喚/等級)。
+【例句】Our class is very loud, but the teacher says we are just 'energetic'. 我們班很大聲，但老師說我們只是「精力充沛」。"
+teacher,"teacher (n.) 老師
+【發音】/ tea / ch / er /
+【字義】teach (教) + -er (做...的人)。
+【例句】My teacher has eyes in the back of her head; she saw me eating candy! 我的老師後腦勺長眼睛，她竟然看到我在吃糖果！"
+lesson,"lesson (n.) 一課；課程
+【發音】/ les / son /
+【字義】來自拉丁語 lectio (閱讀)。
+【例句】Today's English lesson was fun because we sang a song about monkeys. 今天的英文課很有趣，因為我們唱了一首關於猴子的歌。"
+rule,"rule (n.) 規定
+【發音】/ r / u / le /
+【字義】來自拉丁語 regula (直尺/標準)。
+【例句】The first rule of the classroom is: Do not feed the students' math books to monsters. 教室的第一條規定是：不要把學生的數學書餵給怪獸吃。"
+blackboard,"blackboard (n.) 黑板
+【發音】/ bl / a / ck / b / oa / r / d /
+【字義】black (黑) + board (板)。
+【例句】The teacher wrote the answer on the blackboard, but I can't read her messy handwriting. 老師把答案寫在黑板上，但我看不懂她亂七八糟的字跡。"
+ruler,"ruler (n.) 尺
+【發音】/ r / u / l / er /
+【字義】rule (規定/劃線) + -er (工具)。
+【例句】I use a ruler to draw a straight line, but it still looks like a snake. 我用尺畫直線，但畫出來還是像一條蛇。"
+pencil,"pencil (n.) 鉛筆
+【發音】/ pen / cil /
+【字義】來自拉丁語 penicillus (小尾巴/畫筆)。
+【例句】I chewed on my pencil so much that now it is shorter than my thumb. 我太常啃鉛筆了，現在它比我的大拇指還短。"
+dictionary,"dictionary (n.) 字典
+【發音】/ dic / tion / a / ry /
+【字義】dict (說/講) + -ion (名詞尾) + -ary (場所) -> 收集言論之書。
+【例句】I look up the word 'funny' in the dictionary, and I see a picture of you! 我在字典裡查「滑稽」這個詞，結果看到你的照片！"
+homework,"homework (n.) 家庭作業
+【發音】/ ho / me / w / or / k /
+【字義】home (家) + work (工作)。
+【例句】My dog didn't eat my homework; he just refused to help me write it. 我的狗沒吃我的作業；他只是拒絕幫我寫而已。"
+history,"history (n.) 歷史
+【發音】/ his / to / ry /
+【字義】來自希臘語 historia (研究/探索)。
+【例句】History is interesting, but I don't understand why people in the past wore such funny hats. 歷史很有趣，但我不明白為什麼以前的人要戴那麼好笑的帽子。"
+enter,"enter (v.) 進入
+【發音】/ en / ter /
+【字義】來自拉丁語 intrare (進入)。
+【例句】Do not enter the kitchen when Mom is cooking, or you will be asked to wash the dishes! 媽媽在煮飯時不要進入廚房，否則你會被叫去洗碗！"
+learn,"learn (v.) 學習
+【發音】/ l / ear / n /
+【字義】來自古英語 leornian。
+【例句】I want to learn how to speak Cat, so I can talk to my pet all day. 我想學習怎麼說「貓語」，這樣我就可以整天跟我的寵物聊天。"
+spell,"spell (v.) 拼單字
+【發音】/ s / p / e / ll /
+【字義】來自法語 espeller (解釋/朗讀)。
+【例句】Can you spell 'banana' without saying 'ba-na-na-na-na'? 你能拼出「香蕉」而不要一直唸「香-蕉-蕉-蕉-蕉」嗎？"
+finish,"finish (v.) 完成
+【發音】/ fin / i / sh /
+【字義】來自拉丁語 finire (結束)。
+【例句】I will finish my lunch in ten seconds if there is chocolate cake for dessert. 如果甜點是巧克力蛋糕，我十秒鐘就能吃完午餐。"
+mark,"mark (v./n.) 打分數；標記
+【發音】/ m / ar / k /
+【字義】來自古英語 mearc (邊界/符號)。
+【例句】The teacher put a red mark on my paper because I spelled my own name wrong. 老師在我的考卷上畫了一個紅標記，因為我把自己的名字拼錯了。"
+question,"question (n.) 疑問；問題
+【發音】/ ques / tion /
+【字義】來自拉丁語 quaerere (詢問/尋找)。
+【例句】I have a question: Why is school so long and summer vacation so short? 我有個問題：為什麼上學時間那麼長，暑假卻那麼短？"
+wrong,"wrong (adj.) 錯誤的
+【發音】/ wr / o / ng / (w不發音)
+【字義】來自古諾斯語 rangr (彎曲的/不正的)。
+【例句】It is wrong to put socks on your ears, even if they are cold. 把襪子套在耳朵上是不對的，就算耳朵很冷也一樣。"
+scissor(s),"scissor(s) (n.) 剪刀
+【發音】/ sci / ssor / s /
+【字義】來自拉丁語 caedere (剪/切)。
+【例句】Don't run with scissors, unless you are racing to finish an art project. 不要拿著剪刀亂跑，除非你正趕著完成美勞作業。"
+crayon,"crayon (n.) 蠟筆
+【發音】/ cray / on /
+【字義】來自拉丁語 creta (白堊/粉筆)。
+【例句】I used a yellow crayon to draw a sun, but it ended up looking like a fried egg. 我用黃色蠟筆畫太陽，結果看起來像一顆荷包蛋。"
+test,"test (n.) 測驗
+【發音】/ t / e / s / t /
+【字義】來自拉丁語 testum (陶罐/檢驗金屬用的容器)。
+【例句】I studied so hard for the English test that I forgot my own phone number. 我為了英文測驗拼命讀書，讀到連自己的電話號碼都忘了。"
+classroom,"classroom (n.) 教室
+【發音】/ cl / a / ss / r / oo / m /
+【字義】class (班級) + room (房間)。
+【例句】Our classroom becomes a jungle during recess when everyone starts jumping. 下課時間大家都亂跳時，我們的教室就變成了叢林。"
+playground,"playground (n.) 操場
+【發音】/ p / l / ay / g / r / ou / n / d /
+【字義】play (玩) + ground (場地/土地)。
+【例句】The playground is the only place where being fast is more important than being smart. 在操場上，跑得快比聰明還要重要。"
+student,"student (n.) 學生
+【發ages音】/ s / t / u / den / t /
+【字義】來自拉丁語 studere (熱心/致力於)。
+【例句】Being a student is hard work, especially the part where you have to stay awake. 當學生很辛苦，尤其是必須保持清醒的那部分。"
+eraser,"eraser (n.) 橡皮擦；板擦
+【發音】/ e / ra / ser /
+【字義】erase (擦掉) + -er (工具)。
+【例句】My eraser is my best friend because it helps me hide all my mistakes. 橡皮擦是我最好的朋友，因為它幫我藏起所有的錯誤。"
+paper,"paper (n.) 紙；考卷
+【發音】/ pa / per /
+【字義】來自希臘語 papuros (莎草紙)。
+【例句】I tried to make a paper airplane, but it just fell on my teacher's head. 我試著做一架紙飛機，結果它直接掉在老師頭上。"
+word,"word (n.) 單字
+【發音】/ w / or / d /
+【字義】來自古英語 word。
+【例句】'Supercalifragilisticexpialidocious' is the longest word I can say without breathing. 這是不用換氣我也能說出的最長單字。"
+english,"english (n.) 英文
+【發音】/ En / g / l / i / sh /
+【字義】來自 Angles (盎格魯人)。
+【例句】I like English class, but I think spelling 'queue' is just a waste of vowels. 我喜歡英文課，但我覺得拼 queue 這個字簡直是在浪費母音。"
+answer,"answer (n.) 答案
+【發音】/ an / sw / er / (w不發音)
+【字義】來自古英語 and- (反對) + swaru (誓言) -> 回應指控。
+【例句】I knew the answer to the question, but my brain decided to take a vacation. 我知道這題的答案，但我的大腦突然決定要去度假。"
+check,"check (v.) 檢查
+【發音】/ ch / e / ck /
+【字義】來自波斯語 shah (國王/將軍)。
+【例句】Always check your schoolbag before leaving home, or you might bring your cat to school. 出門前一定要檢查書包，否則你可能會把貓帶去學校。"
+teach,"teach (v.) 教導
+【發音】/ tea / ch /
+【字義】來自古英語 tæcan (展示/指引)。
+【例句】Can you teach me how to wiggle my ears like you do? 你能教我怎麼像你那樣動耳朵嗎？"
+read,"read (v.) 閱讀
+【發音】/ r / ea / d /
+【字義】來自古英語 rædan (建議/解釋)。
+【例句】I can read a whole book in one night if it's a comic book about superheroes. 如果是關於超級英雄的漫畫，我一晚就能讀完一整本。"
+study,"study (v.) 研讀
+【發音】/ s / t / u / dy /
+【字義】來自拉丁語 studium (熱心/渴望)。
+【例句】I plan to study for three hours, but I usually spend two hours looking for my pencil. 我計畫讀書三小時，但我通常花兩小時在找鉛筆。"
+correct,"correct (adj.) 正確的
+【發音】/ cor / rec / t /
+【字義】cor- (加強/一起) + rect (直) -> 非常正直/正確的。
+【例句】You are correct! Penguins cannot fly, but they are great at sliding on their bellies. 你是正確的！企鵝不會飛，但它們很擅長用肚子滑行。"
+mistake,"mistake (n.) 錯誤
+【發音】/ mis / ta / ke /
+【字義】mis- (錯誤) + take (取/拿) -> 拿錯了/誤解。
+【例句】I made a big mistake: I put salt in my coffee instead of sugar! 我犯了大錯：我把鹽巴當成糖加進咖啡裡了！"
+marker,"marker (n.) 麥克筆
+【發音】/ m / ar / k / er /
+【字義】mark (標記) + -er (工具)。
+【例句】Who used the permanent marker on my face while I was sleeping? 是誰趁我睡覺時用油性麥克筆在我臉上亂畫？"
+sport,"sport (n.) 體育活動
+【發音】/ sp / or / t / (or: R-control 母音)
+【字義】port (攜帶；運送) -> 原始意指將注意力帶往放鬆的事物。
+【例句】I love every sport except the ones that involve running for a long time. 我熱愛每一項體育活動，除了那些需要跑很久的項目。"
+habit,"habit (n.) 習慣
+【發音】/ h / a / b / i / t / (short a: single 短母音)
+【字義】源自拉丁語 habitus，意指狀態或外表。
+【例句】My brother has a bad habit of singing in the shower at 2 AM. 我哥有個半夜兩點在浴室唱歌的壞習慣。"
+interested,"interested (adj.) 對...感興趣的
+【發音】/ in / ter / est / ed / (er: R-control 母音)
+【字義】inter- (在...之間) + est (存在) -> 存在於事物之間，引申為感興趣。
+【例句】I’m very interested in your pizza; can I have a bite? 我對你的披薩非常感興趣，可以讓我咬一口嗎？"
+baseball,"baseball (n.) 棒球
+【發音】/ b / ase / b / all / (base: a_e long a; ball: special a)
+【字義】base (基礎/壘包) + ball (球) -> 繞壘的球類運動。
+【例句】He is so bad at baseball that he once hit the umpire instead of the ball. 他真的很不擅長打棒球，有一次他沒打到球，反而打到了裁判。"
+player,"player (n.) 運動員；選手
+【發音】/ pl / ay / er / (ay: long a; er: R-control 母音)
+【字義】play (玩/比賽) + -er (做某事的人) -> 參加比賽的人。
+【例句】The best soccer player in our school is actually a tiny girl. 我們學校最強的足球選手居然是一個嬌小的女孩。"
+jog,"jog (v.) 慢跑
+【發音】/ j / o / g / (short o: CVC 短母音)
+【字義】單音節動詞，指規律的中速跑動。
+【例句】My dog loves to jog with me, but he usually stops to smell every tree. 我的狗喜歡跟我一起慢跑，但他通常會停下來聞每一棵樹。"
+draw,"draw (v.) 畫圖；拉
+【發音】/ dr / aw / (aw: special a)
+【字義】源自古英語，意指拖拉或留下痕跡。
+【例句】I tried to draw a cat, but it ended up looking like a fat potato with legs. 我試著畫一隻貓，結果畫出來像是一顆長了腳的肥土豆。"
+paint,"paint (v.) 繪畫；粉刷
+【發音】/ p / ai / nt / (ai: long a)
+【字義】指使用顏料進行創作或覆蓋表面。
+【例句】Please don't paint the walls purple while I am on vacation. 當我去度假時，請不要把牆壁漆成紫色。"
+basket,"basket (n.) 籃子
+【發音】/ b / a / sk / e / t / (a: short a; e: short e)
+【字義】用來盛裝東西的編織容器。
+【例句】Keep all your dirty socks in one basket, please! 請把你所有的髒襪子都放進同一個籃子裡！"
+band,"band (n.) 樂團
+【發音】/ b / an / d / (an: short a)
+【字義】指一群聚集在一起的人，現多指樂隊。
+【例句】I want to start a rock band, but I can only play the triangle. 我想組一個搖滾樂團，但我只會敲三角鐵。"
+cover,"cover (n.) 封面 (v.) 遮蓋
+【發音】/ c / o / v / er / (er: R-control 母音)
+【字義】指蓋在上方或外部的東西。
+【例句】Don't judge a book by its cover, especially if it's my diary. 不要以貌取人（書），特別是當那是我的日記時。"
+kite,"kite (n.) 風箏
+【發音】/ k / i / te / (i_e: long i)
+【字義】單音節詞，結尾為不發音 e，使 i 發長音。
+【例句】Go fly a kite! (Actually, please do, it's a very windy day.) 去放風箏吧！（我是認真的，今天風很大。）"
+song,"song (n.) 歌曲
+【發音】/ s / ong / (ong: short o)
+【字義】與唱 (sing) 相關的名詞形式。
+【例句】This song is so catchy that I have been humming it for three days. 這首歌太洗腦了，我已經連續哼了三天。"
+play,"play (v.) 玩；比賽
+【發音】/ pl / ay / (ay: long a)
+【字義】指進行遊戲或娛樂活動。
+【例句】Children love to play tag in the park until it gets dark. 孩子們喜歡在公園玩捉迷藏，直到天黑。"
+collect,"collect (v.) 收集
+【發音】/ c / o / ll / e / ct / (ct: T-control 子音)
+【字義】col- (共同/一起) + lect (選擇/聚集) -> 聚集在一起。
+【例句】I collect strange rocks, but my mom thinks they are just garden trash. 我收集奇特的石頭，但我媽覺得它們只是花園裡的垃圾。"
+practice,"practice (n./v.) 練習
+【發音】/ pr / a / c / t / i / ce / (short a)
+【字義】重複執行某項動作以達到熟練。
+【例句】Practice makes perfect, but nobody is perfect, so why practice? 練習成就完美，但沒人是完美的，那幹嘛練習？（開玩笑的啦！）"
+wake,"wake (v.) 醒來
+【發音】/ w / a / ke / (a_e: long a)
+【字義】從睡眠狀態進入清醒。
+【例句】I usually wake up at 7 AM, but my brain doesn't wake up until noon. 我通常早上七點醒來，但我的大腦直到中午才開機。"
+win,"win (v.) 獲勝
+【發音】/ w / i / n / (in: short i)
+【字義】在比賽中取得領先或獎項。
+【例句】Winning isn't everything, but it feels a lot better than losing. 贏球不是一切，但感覺比輸球好多了。"
+lose,"lose (v.) 輸掉；失去
+【發音】/ l / o / se / (o_e pattern, 長母音變異)
+【字義】與贏相對，指沒能保住或沒能獲勝。
+【例句】I always lose my keys when I am already five minutes late for school. 我總是在上學遲到五分鐘時才找不到鑰匙。"
+skate,"skate (v.) 溜冰；滑冰
+【發音】/ sk / a / te / (a_e: long a)
+【字義】指穿著滑冰鞋移動。
+【例句】I tried to skate for the first time and spent most of the time on the floor. 我第一次嘗試溜冰，結果大部分時間都待在地板上。"
+dodge ball,"dodge ball (n.) 躲避球
+【發音】/ d / o / dge / b / all / (o: short o; all: special a)
+【字義】dodge (閃躲) + ball (球) -> 閃躲球的遊戲。
+【例句】Dodge ball is the only sport where it's okay to throw things at your friends. 躲避球是唯一可以合法拿東西砸朋友的體育活動。"
+road,"road(n.) 道路
+【發音】/ r / oa / d / (oa 為 long o)
+【字義】源自古英語 rād，意指「騎行」或「行進的路徑」。
+【例句】The road to my house is full of beautiful flowers. 通往我家的道路開滿了美麗的花朵。"
+street,"street(n.) 街道
+【發音】/ str / ee / t / (str 為 3-blend, ee 為 long e)
+【字義】源自拉丁語 strata，意指「鋪平的道路」。
+【例句】Don't play soccer in the middle of the street! 不要在大馬路中間踢足球！"
+city,"city(n.) 城市
+【發音】/ c / i / t / y / (i 為 short i, y 為 long e)
+【字義】源自拉丁語 civitas，與公民（civil）有關，指大型的人類聚居地。
+【例句】The city lights look like stars at night. 城市的燈火在晚上看起來就像星星一樣。"
+country,"country(n.) 國家；鄉下的
+【發音】/ c / ou / n / tr / y / (ou 為 short u 音, tr 為 r-blend, y 為 long e)
+【字義】源自拉丁語 contra，原指「對面或延伸的土地」。
+【例句】Which country would you like to visit this summer? 今年夏天你想去哪個國家旅遊？"
+America,"America(n.) 美國
+【發音】/ A / mer / i / ca / (er 為 R-control)
+【字義】以義大利探險家亞美利哥（Amerigo Vespucci）的名字命名。
+【例句】America is famous for Hollywood and hamburgers. 美國以好萊塢和漢堡聞名。"
+USA,"USA(n.) 美利堅合眾國
+【發音】/ U / S / A / (字母發音縮寫)
+【字義】United (聯合) + States (州) + of America (美洲)。
+【例句】The USA consists of fifty different states. 美國是由五十個不同的州組成的。"
+China,"China(n.) 中國
+【發音】/ Ch / i / na / (Ch 為 digraph, i 為 long i)
+【字義】源自秦朝的「秦」（Qin）之音譯，指絲綢與瓷器的產地。
+【例句】The Great Wall of China is one of the Seven Wonders of the World. 中國長城是世界七大奇蹟之一。"
+Taiwan,"Taiwan(n.) 台灣
+【發音】/ Tai / wan / (ai 為 long a)
+【字義】原為平埔族語音譯，意指「外來者之處」或「海濱」。
+【例句】Taiwan is a beautiful island with lots of delicious food. 台灣是一個有很多美食的美麗島嶼。"
+ROC,"ROC(n.) 中華民國
+【發音】/ R / O / C / (字母發音縮寫)
+【字義】Republic (共和國) + of China (中國)。
+【例句】ROC stands for the Republic of China. ROC 代表中華民國。"
+bank,"bank(n.) 銀行
+【發音】/ b / an / k / (an 為 short a 變體)
+【字義】源自日耳曼語 banca，原指交換錢幣的「長凳」或「櫃檯」。
+【例句】I put my pocket money into the bank every month. 我每個月都會把零用錢存進銀行。"
+hospital,"hospital(n.) 醫院
+【發音】/ hos / pi / tal / (al 為 L-control)
+【字義】源自拉丁語 hospit- (客人)，原指接待與照料客人的地方。
+【例句】The hospital is very quiet because the patients need to rest. 醫院非常安靜，因為病人需要休息。"
+church,"church(n.) 教堂
+【發音】/ ch / ur / ch / (ch 為 digraph, ur 為 R-control)
+【字義】源自希臘語 kyriakon，意指「主人的房子」。
+【例句】The old church has beautiful colorful glass windows. 那座老教堂有漂亮的彩色玻璃窗。"
+office,"office(n.) 辦公室
+【發音】/ of / fice / (i_e 結尾 long i/特殊音)
+【字義】源自拉丁語 officium，由 ops (資源/做) + facere (做) 組成。
+【例句】My dad works in a tall building in the city office. 我爸爸在城市辦公大樓的一棟高樓裡工作。"
+park,"park(n.) 公園
+【發音】/ p / ar / k / (ar 為 R-control)
+【字義】源自古法語 parc，原指圍起來的獵場或土地。
+【例句】Let's go to the park to have a picnic this weekend. 我們這週末去公園野餐吧。"
+hotel,"hotel(n.) 飯店
+【發音】/ ho / tel / (el 為 L-control)
+【字義】與 hospital 同源，指提供旅客住宿與膳食的場所。
+【例句】The hotel we stayed in had a very big swimming pool. 我們住的飯店有一個非常大的游泳池。"
+place,"place(n.) 地方
+【發音】/ pl / a_e / (pl 為 l-blend, a_e 為 long a)
+【字義】源自拉丁語 platea，意指「寬廣的街道」或「庭院」。
+【例句】This is the best place to watch the sunset. 這裡是看日落最好的地方。"
+post office,"post office(n.) 郵局
+【發音】/ post / of / fice / (post 為 long o)
+【字義】post (郵件/站) + office (辦公室)，處理郵務的場所。
+【例句】I need to go to the post office to send a letter to Grandma. 我需要去郵局寄信給奶奶。"
+party,"party(n.) 派對
+【發音】/ p / ar / ty / (ar 為 R-control, y 為 long e)
+【字義】源自拉丁語 part- (部分)，原指參與特定群體的一組人。
+【例句】Everyone wore a funny hat at my birthday party. 在我的生日派對上，每個人都戴著一頂好笑的帽子。"
+museum,"museum(n.) 博物館
+【發音】/ mu / se / um / (u 為 long u)
+【字義】源自希臘語 mouseion，意指「獻給繆思女神（Muses）的殿堂」。
+【例句】The science museum has a giant dinosaur skeleton. 科學博物館裡有一具巨大的恐龍骨架。"
+zoo,"zoo(n.) 動物園
+【發音】/ z / oo / (oo 為 long o 變體)
+【字義】zo- (動物) + -o，為 zoological garden 的縮寫。
+【例句】We saw a baby panda eating bamboo at the zoo. 我們在動物園看到一隻小貓熊在吃竹子。"
+restaurant,"restaurant(n.) 餐廳
+【發音】/ res / tau / rant / (tau 為特殊 au 音)
+【字義】源自法語 restaurer，意指「使恢復體力」（restoring）。
+【例句】This Italian restaurant serves the best spaghetti in town. 這家義大利餐廳提供鎮上最好的義大利麵。"
+bookstore,"bookstore(n.) 書店
+【發音】/ b / oo / k / store / (oo 為 short oo 變體)
+【字義】book (書) + store (店鋪)，販賣書籍的地方。
+【例句】I can spend all afternoon reading stories in the bookstore. 我可以在書店裡讀一整個下午的故事書。"
+convenient store,"convenient store(n.) 便利商店
+【發音】/ con / ve / nient / store / (con 為字首)
+【字義】con- (一起) + ven (來) -> 大家一起方便來的地方。
+【例句】You can find a convenient store on almost every corner in Taiwan. 在台灣，幾乎每個角落都能找到便利商店。"
+bakery,"bakery(n.) 麵包店
+【發音】/ b / a_e / k / er / y / (a_e 為 long a, er 為 R-control, y 為 long e)
+【字義】bake (烘烤) + -ery (場所) -> 烘烤食物的地方。
+【例句】The smell of fresh bread from the bakery is wonderful. 麵包店傳出新鮮麵包的味道真是太棒了。"
+library,"library(n.) 圖書館
+【發音】/ li / brar / y / (y 為 long e)
+【字義】源自拉丁語 libr- (書)，存放書籍與資料的場所。
+【例句】Please be quiet when you are reading in the library. 在圖書館看書時請保持安靜。"
+market,"market(n.) 市場
+【發音】/ m / ar / ket / (ar 為 R-control)
+【字義】源自拉丁語 marc- (交易)，進行買賣的公共場所。
+【例句】Mom buys fresh vegetables at the morning market. 媽媽在早市買新鮮的蔬菜。"
+department store,"department store(n.) 百貨公司
+【發音】/ de / part / ment / store / (de 為字首, ment 為字尾)
+【字義】de- (分開) + part (部分) -> 分成許多部門或櫃位的商店。
+【例句】The department store is crowded during the anniversary sale. 週年慶期間百貨公司擠滿了人。"
+shop,"shop(n.) 商店
+【發音】/ sh / o / p / (sh 為 digraph, o 為 short o)
+【字義】源自古英語 sceoppa，原指一個棚子或攤位。
+【例句】My sister wants to open a small flower shop one day. 我姐姐希望有一天能開一家小花店。"
+store,"store(n.) 店鋪
+【發音】/ st / o_e / (st 為 s-blend, o_e 為 long o)
+【字義】源自古法語 estorer，原指「放置」或「儲存」物品的地方。
+【例句】Is there a pet store near here? I want to buy some fish. 這附近有寵物店嗎？我想買幾條魚。"
+supermarket,"supermarket(n.) 超級市場
+【發音】/ su / per / mar / ket / (super 為字首)
+【字義】super- (超過/超級) + market (市場) -> 超大型且物品豐富的市場。
+【例句】I bought a giant watermelon at the supermarket. 我在超級市場買了一個超級大西瓜。"
+theater,"theater(n.) 劇院；電影院
+【發音】/ th / ea / ter / (th 為 digraph, ea 為 long e, er 為 R-control)
+【字義】源自希臘語 thea- (看)，觀看演出或電影的場所。
+【例句】Let's go to the theater to see the new superhero movie! 我們去電影院看新的超級英雄電影吧！"
+one,"one(n.) 一
+【發音】/ w / u / n / (特殊拼讀)
+【字義】基本的計數單位，代表單一。
+【例句】I have only one apple left in my bag. 我包包裡只剩下一顆蘋果了。"
+two,"two(n.) 二
+【發音】/ t / oo / (特殊拼讀)
+【字義】與 bi- (雙) 或 du- 有關，代表一加一。
+【例句】I have two hands and ten fingers. 我有兩隻手和十隻手指。"
+three,"three(n.) 三
+【發音】/ th / r / ee / (th 為 digraph, ee 為 long e)
+【字義】與 tri- (三) 有關。
+【例句】The little pigs built three different houses. 小豬們蓋了三棟不同的房子。"
+four,"four(n.) 四
+【發音】/ f / ou / r / (ou 為 long o 變體)
+【字義】代表二的兩倍。
+【例句】A chair usually has four legs. 椅子通常有四隻腳。"
+five,"five(n.) 五
+【發音】/ f / i_e / v / (i_e 為 long i)
+【字義】與 penta- (五) 有關。
+【例句】High five! You did a great job today. 擊掌！你今天做得很好。"
+six,"six(n.) 六
+【發音】/ s / i / x / (i 為 short i)
+【字義】代表三的兩倍。
+【例句】A bee has six legs. 蜜蜂有六隻腳。"
+seven,"seven(n.) 七
+【發音】/ s / e / v / en / (e 為 short e)
+【字義】代表一週的天數。
+【例句】There are seven days in a week. 一個星期有七天。"
+eight,"eight(n.) 八
+【發音】/ ei / ght / (特殊拼讀)
+【字義】代表四的兩倍。
+【例句】An octopus has eight long arms. 章魚有八隻長長的手臂。"
+nine,"nine(n.) 九
+【發音】/ n / i_e / n / (i_e 為 long i)
+【字義】代表三的三倍。
+【例句】My brother is nine years old. 我弟弟今年九歲。"
+ten,"ten(n.) 十
+【發音】/ t / en / (en 為 short e 變體)
+【字義】與 dec- (十) 有關，十進位的基礎。
+【例句】Ten minus two is eight. 十減二等於八。"
+eleven,"eleven(n.) 十一
+【發音】/ e / le / ven / (el 為 L-control)
+【字義】源自古英語，意指「剩下一個」（十之後餘一）。
+【例句】I usually go to sleep at eleven o'clock. 我通常在十一點睡覺。"
+twelve,"twelve(n.) 十二
+【發音】/ tw / el / ve / (tw 為 blend, el 為 L-control)
+【字義】源自古英語，意指「剩下兩個」（十之後餘二）。
+【例句】There are twelve months in a year. 一年有十二個月。"
+thirteen,"thirteen(n.) 十三
+【發音】/ th / ir / teen / (th 為 digraph, ir 為 R-control, ee 為 long e)
+【字義】thir (來自 three) + -teen (來自 ten) -> 三加十。
+【例句】Thirteen is considered an unlucky number in some countries. 在某些國家，十三被認為是不吉利的數字。"
+fourteen,"fourteen(n.) 十四
+【發音】/ four / teen / (ee 為 long e)
+【字義】four (四) + -teen (十) -> 四加十。
+【例句】I will be fourteen years old next year. 我明年就十四歲了。"
+fifteen,"fifteen(n.) 十五
+//fif / teen / (ee 為 long e)
+【字義】fif (來自 five) + -teen (十) -> 五加十。
+【例句】We have a fifteen-minute break after class. 課後我們有十五分鐘的休息時間。"
+sixteen,"sixteen(n.) 十六
+【發音】/ six / teen / (ee 為 long e)
+【字義】six (六) + -teen (十) -> 六加十。
+【例句】A chess set has sixteen white pieces. 一副西洋棋有十六個白色的棋子。"
+seventeen,"seventeen(n.) 十七
+【發音】/ sev / en / teen / (ee 為 long e)
+【字義】seven (七) + -teen (十) -> 七加十。
+【例句】My cat lived for seventeen years. 我的貓活了十七年。"
+eighteen,"eighteen(n.) 十八
+【發音】/ eigh / teen / (ee 為 long e)
+【字義】eight (八) + -teen (十) -> 八加十。
+【例句】You can vote when you are eighteen years old. 你十八歲時就可以投票了。"
+nineteen,"nineteen(n.) 十九
+【發音】/ nine / teen / (ee 為 long e)
+【字義】nine (九) + -teen (十) -> 九加十。
+【例句】The book has nineteen chapters in total. 這本書總共有十九章。"
+twenty,"twenty(n.) 二十
+【發音】/ twen / ty / (y 為 long e)
+【字義】twen- (來自 two) + -ty (十的倍數) -> 兩個十。
+【例句】I have twenty dollars to buy some snacks. 我有二十元可以買零食。"
+thirty,"thirty(n.) 三十
+【發音】/ thir / ty / (ir 為 R-control, y 為 long e)
+【字義】thir- (來自 three) + -ty (十的倍數) -> 三個十。
+【例句】It takes thirty minutes to walk to school. 走路去學校要花三十分鐘。"
+forty,"forty(n.) 四十
+【發音】/ for / ty / (or 為 R-control, y 為 long e)
+【字義】for- (來自 four) + -ty (十的倍數) -> 四個十。
+【例句】Life begins at forty, as the saying goes. 俗話說，人生四十才開始。"
+fifty,"fifty(n.) 五十
+【發音】/ fif / ty / (y 為 long e)
+【字義】fif- (來自 five) + -ty (十的倍數) -> 五個十。
+【例句】My grandfather is celebrating his fifty-year wedding anniversary. 我爺爺正在慶祝他的五十週年結婚紀念日。"
+sixty,"sixty(n.) 六十
+【發音】/ six / ty / (y 為 long e)
+【字義】six (六) + -ty (十的倍數) -> 六個十。
+【例句】There are sixty seconds in one minute. 一分鐘有六十秒。"
+seventy,"seventy(n.) 七十
+【發音】/ sev / en / ty / (y 為 long e)
+【字義】seven (七) + -ty (十的倍數) -> 七個十。
+【例句】My grandma still goes hiking at the age of seventy. 我奶奶七十歲了還去爬山。"
+eighty,"eighty(n.) 八十
+【發音】/ eigh / ty / (y 為 long e)
+【字義】eigh- (來自 eight) + -ty (十的倍數) -> 八個十。
+【例句】The speed limit on this road is eighty kilometers per hour. 這條路的限速是每小時八十公里。"
+ninety,"ninety(n.) 九十
+【發音】/ nine / ty / (y 為 long e)
+【字義】nine (九) + -ty (十的倍數) -> 九個十。
+【例句】He scored ninety points on his English test. 他的英文測驗得了九十分。"
+hundred,"hundred(n.) 百
+【發音】/ hun / dred / (dr 為 blend)
+【字義】與 cent- (百) 有關，代表十個十。
+【例句】There were over a hundred people at the concert. 音樂會上有超過一百人。"
+thousand,"thousand(n.) 千
+【發音】/ thou / sand / (th 為 digraph)
+【字義】與 milli- (千) 有關，代表十個一百。
+【例句】A thousand grams is equal to one kilogram. 一千克等於一公斤。"
+number,"number(n.) 數字
+【發音】/ num / ber / (er 為 R-control)
+【字義】源自拉丁語 numerus，意指「分配」或「計數」。
+【例句】What is your favorite lucky number? 你最喜歡的幸運數字是多少？"
+windy,"windy (adj.) 風大的
+【發音】/ wind / y /
+【字義】wind (風) + -y (具有...特質的形容詞字尾) -> 有風的、風大的。
+【例句】It is so windy today that my umbrella turned inside out! 今天風大到我的雨傘都被吹翻過來了。"
+rose,"rose (n.) 玫瑰花
+【發音】/ r / ose /
+【字義】源自拉丁語 rosa，指一種開花灌木。
+【例句】He gave his mother a red rose to show his love. 他送給母親一朵紅玫瑰以表達他的愛。"
+air,"air (n.) 空氣
+【發音】/ air /
+【字義】指地球大氣層中的氣體。
+【例句】Open the window and let some fresh air in. 把窗戶打開，讓一些新鮮空氣進來。"
+moon,"moon (n.) 月亮
+【發音】/ m / oon /
+【字義】指繞地球運行的自然衛星。
+【例句】The moon looks like a big yellow banana tonight! 今晚的月亮看起來像一根大黃香蕉！"
+sky,"sky (n.) 天空
+【發音】/ sk / y /
+【字義】指地球上方的空間。
+【例句】The sky is so blue that it looks like a giant swimming pool. 天空好藍，看起來像個巨大的游泳池。"
+rainbow,"rainbow (n.) 彩虹
+【發音】/ rain / bow /
+【字義】rain (雨) + bow (弓) -> 下雨後出現在天空像弓一樣的彩色光弧。
+【例句】After the rain, we saw a beautiful rainbow in the sky. 下雨之後，我們在天空中看到了一道美麗的彩虹。"
+weather,"weather (n.) 天氣
+【發音】/ weath / er /
+【字義】指大氣的狀態，如冷、熱、陰、晴。
+【例句】The weather is perfect for a picnic in the park. 這樣的天氣非常適合去公園野餐。"
+cool,"cool (adj.) 涼快的
+【發音】/ c / oo / l /
+【字義】指溫度適中且讓人感到舒服的。
+【例句】A cool breeze feels great on a hot summer afternoon. 在炎熱的夏天下午，吹來一陣涼爽的微風感覺真棒。"
+warm,"warm (adj.) 溫暖的
+【發音】/ w / arm /
+【字義】指溫度介於涼與熱之間，讓人感到舒適的。
+【例句】The soup is nice and warm; it is perfect for a cold day. 這碗湯熱呼呼的，在冷天喝最合適了。"
+sunny,"sunny (adj.) 晴朗的
+【發音】/ sun / ny /
+【字義】sun (太陽) + -y (具有...特質的形容詞字尾) -> 充滿陽光的、晴朗的。
+【例句】On a sunny day, I like to go to the beach with my friends. 在晴朗的日子裡，我喜歡和朋友一起去海邊。"
+mountain,"mountain (n.) 山
+【發音】/ moun / tain /
+【字義】指地表顯著升高的部分。
+【例句】The mountain is so high that there is snow on its top. 這座山很高，山頂上還有積雪。"
+sea,"sea (n.) 海洋
+【發音】/ s / ea /
+【字義】指大片的鹹水區域。
+【例句】I love to listen to the sound of the sea waves at night. 我喜歡在晚上聽海浪的聲音。"
+earth,"earth (n.) 地球；土地
+【發音】/ ear / th /
+【字義】我們居住的行星，或是指地面的泥土。
+【例句】Earth is the only planet we know that has life. 地球是我們目前已知唯一有生命的行星。"
+sun,"sun (n.) 太陽
+【發音】/ s / u / n /
+【字義】太陽系的中心恆星。
+【例句】The sun rises in the east every morning. 太陽每天早晨從東方升起。"
+ice,"ice (n.) 冰
+【發音】/ i / ce /
+【字義】水凍結成的固體。
+【例句】Don't put too much ice in my juice; it is already cold. 別在我的果汁裡放太多冰塊，它已經很冰了。"
+snow,"snow (n.) 雪
+【發音】/ sn / ow /
+【字義】大氣中的水蒸氣遇冷凝結成的小冰晶。
+【例句】I want to build a giant snowman if it starts to snow. 如果開始下雪，我想堆一個巨大的雪人。"
+wind,"wind (n.) 風
+【發音】/ w / i / n / d /
+【字義】流動的空氣。
+【例句】The strong wind blew my hat away. 強風把我的帽子吹走了。"
+cloudy,"cloudy (adj.) 多雲的；陰天的
+【發音】/ cloud / y /
+【字義】cloud (雲) + -y (具有...特質的形容詞字尾) -> 佈滿雲的、陰天的。
+【例句】It is cloudy today, so we don't need to wear sunglasses. 今天多雲，所以我們不需要戴太陽眼鏡。"
+umbrella,"umbrella (n.) 雨傘
+【發音】/ um / brel / la /
+【字義】用來遮雨或遮陽的工具。
+【例句】Don't forget to take an umbrella with you; it might rain later. 別忘了帶傘，待會可能會下雨。"
+river,"river (n.) 河流
+【發音】/ riv / er /
+【字義】自然形成且流向海洋或湖泊的大水道。
+【例句】Many fish live in this clean river. 這條乾淨的河流裡住著很多魚。"
+tree,"tree (n.) 樹
+【發音】/ tr / ee /
+【字義】多年生的木本植物。
+【例句】The cat climbed up the tree and couldn't come down. 貓咪爬到了樹上卻下不來。"
+fire,"fire (n.) 火
+【發音】/ f / ire /
+【字義】燃燒時產生的光和熱。
+【例句】Be careful with fire when you are camping. 露營時使用火要非常小心。"
+star,"star (n.) 星星
+【發音】/ st / ar /
+【字義】夜空中閃爍的發光天體。
+【例句】The sky is full of bright stars tonight. 今晚的天空佈滿了明亮的星星。"
+rain,"rain (n.) 雨
+【發音】/ r / ain /
+【字義】從雲中落下的水滴。
+【例句】I like to stay home and read a book when it starts to rain. 開始下雨時，我喜歡待在家裡看書。"
+typhoon,"typhoon (n.) 颱風
+【發音】/ ty / phoon /
+【字義】發生在西太平洋的熱帶氣旋。
+【例句】School was canceled because of the strong typhoon. 因為強烈颱風的關係，學校停課了。"
+cold,"cold (adj.) 寒冷的
+【發音】/ c / old /
+【字義】指溫度低，讓人感到寒意的。
+【例句】It is very cold outside; please wear your heavy coat. 外面很冷，請穿上你的厚大衣。"
+rainy,"rainy (adj.) 下雨的
+【發音】/ rain / y /
+【字義】rain (雨) + -y (具有...特質的形容詞字尾) -> 多雨的、下雨的。
+【例句】I don't like rainy days because I can't play basketball outside. 我不喜歡下雨天，因為我不能去外面打籃球。"
+snowy,"snowy (adj.) 下雪的
+【發音】/ snow / y /
+【字義】snow (雪) + -y (具有...特質的形容詞字尾) -> 覆蓋著雪的、下雪的。
+【例句】The snowy mountain looks like a giant ice cream. 被雪覆蓋的山看起來像個巨大的冰淇淋。"
+water,"water (n.) 水
+【發音】/ wa / ter / (er: R-control)
+【字義】(源自古英語，對應來源無特定字根)
+【例句】I drink so much water that I’m basically a high-maintenance houseplant. 我喝了這麼多水，基本上就是一盆難伺候的室內植物。"
+exercise,"exercise (n./v.) 運動；練習
+【發音】/ ex / er / cise / (ex: short e; er: R-control; cise: long i _e)
+【字義】ex- (出、外) -> 釋放體力與能量的活動。
+【例句】My favorite exercise is a cross between a lunge and a crunch... I call it lunch. 我最喜歡的運動是跨步跟捲腹的結合...我稱之為「午餐」。"
+Rest,"Rest (n./v.) 休息
+【發音】/ rest / (short e; st: T-control)
+【字義】(來源無對應字首字根)
+【例句】I'm not lazy, I'm just on energy-saving mode like my phone. 我不懶，我只是像手機一樣處於省電模式。"
+favorite,"favorite (adj./n.) 最愛的
+【發音】/ fa / vor / ite / (fa: long a single; vor: R-control; ite: long i _e)
+【字義】favor (支持、喜好) -> 最受支持或喜愛的。
+【例句】Monday is my favorite day of the week, said no one ever. 「週一是我一週中最愛的一天」，這句話從來沒人說過。"
+basketball,"basketball (n.) 籃球
+【發音】/ bas / ket / ball / (ball: special a 'all')
+【字義】basket (籃子) + ball (球) -> 投進籃筐的球賽。
+【例句】I'm really good at basketball; I can miss any shot from any distance. 我真的很擅長籃球，任何距離我都能投不進。"
+team,"team (n.) 隊；小組
+【發音】/ team / (long e 'ea')
+【字義】(來源無對應字首字根)
+【例句】There is no ""I"" in team, but there is an ""M"" and an ""E"" which spells ""ME"". 團隊裡沒有「我」這個字母，但有「M」和「E」，拼起來就是「我」。"
+art,"art (n.) 藝術
+【發音】/ art / (R-control 'ar')
+【字義】art (藝術、技巧) -> 展示技巧的作品。
+【例句】Earth without ""art"" is just ""Eh"". 沒有藝術的地球，聽起來就只是「呃」。"
+movie,"movie (n.) 電影
+【發音】/ mo / vie / (ie: long e)
+【字義】(源自 moving picture)
+【例句】I follow a seafood diet: I see food and I eat it while watching a movie. 我遵循「海鮮」飲食法：我看到食物，我就在看電影時吃掉它。"
+picture,"picture (n.) 圖片；照片
+【發音】/ pic / ture / (ture: -ure 結尾)
+【字義】(來源無對應字首字根)
+【例句】A picture is worth a thousand words, but it uses up way more phone storage. 一張圖片勝過千言萬語，但它耗費的手機空間也多得多。"
+show,"show (n./v.) 表演；展示
+【發音】/ show / (sh: Digraph; ow: long o)
+【字義】(來源無對應字首字根)
+【例句】My cat puts on a great show every night at 3 AM for no reason. 我的貓每天凌晨三點都會無緣無故地上演一場精彩的表演。"
+camp,"camp (n./v.) 露營
+【發音】/ camp / (short a 'amp')
+【字義】(來源無對應字首字根)
+【例句】Camping is where you spend a small fortune to live like a homeless person. 露營就是你花了一小筆錢，卻過得像個流浪漢。"
+hobby,"hobby (n.) 嗜好
+【發音】/ hob / by / (y: long e)
+【字義】(來源無對應字首字根)
+【例句】My hobby is collecting hobbies that I never actually start. 我的愛好是收集那些我從未真正開始過的愛好。"
+interest,"interest (n.) 興趣
+【發音】/ in / ter / est / (in: short i; ter: R-control)
+【字義】inter- (之間) + est (存在) -> 存在於事物之間的吸引力。
+【例句】I have a great interest in sleeping, but my boss doesn't seem to support it. 我對睡覺有很大的興趣，但我的老闆似乎不太支持。"
+ball,"ball (n.) 球
+【發音】/ ball / (special a 'all')
+【字義】(來源無對應字首字根)
+【例句】Life is like a ball; sometimes you bounce, and sometimes you get kicked. 生活就像一顆球；有時你彈起來，有時你被踢飛。"
+tennis,"tennis (n.) 網球
+【發音】/ ten / nis / (ten: short e 'en')
+【字義】(來源無對應字首字根)
+【例句】Tennis is basically just two people screaming at a yellow ball. 網球基本上就是兩個人對著一顆黃球尖叫。"
+swim,"swim (v.) 游泳
+【發音】/ swim / (sw: S-blend; short i)
+【字義】(來源無對應字首字根)
+【例句】I love to swim, but only if the pool is heated and there are no children. 我喜歡游泳，但前提是泳池要有暖氣而且沒有小孩。"
+dance,"dance (v./n.) 跳舞
+【發音】/ dance / (short a 'an')
+【字義】(來源無對應字首字根)
+【例句】I dance like a giraffe on ice, but I have a lot of fun doing it. 我跳起舞來像一隻踩在冰上的長頸鹿，但我玩得很開心。"
+music,"music (n.) 音樂
+【發音】/ mu / sic / (mu: long u single; ic: short i)
+【字義】(ic: 名詞/形容詞字尾)
+【例句】Music is what feelings sound like when you can't find the words. 當你找不到辭彙時，音樂就是情感聽起來的樣子。"
+picnic,"picnic (n.) 野餐
+【發音】/ pic / nic / (short i)
+【字義】(來源無對應字首字根)
+【例句】A picnic is a great way to feed all the ants in the park at once. 野餐是同時餵飽公園裡所有螞蟻的好方法。"
+sing,"sing (v.) 唱歌
+【發音】/ sing / (short i 'ing')
+【字義】(來源無對應字首字根)
+【例句】I sing in the shower because it's the only place where I have fans (the showerhead). 我在浴室唱歌，因為那是唯一我有粉絲（蓮蓬頭）的地方。"
+comic,"comic (n./adj.) 漫畫；滑稽的
+【發音】/ com / ic / (ic: -ic 結尾)
+【字義】(ic: 與...相關的)
+【例句】My life is like a comic book, but without the cool superpowers. 我的生活就像一本漫畫書，但沒有酷炫的超能力。"
+doll,"doll (n.) 玩偶
+【發音】/ doll / (short o)
+【字義】(來源無對應字首字根)
+【例句】My sister has so many dolls that I feel like they're watching me sleep. 我妹妹有這麼多玩偶，我覺得它們都在看我睡覺。"
+magic,"magic (n.) 魔術；魔法
+【發音】/ ma / gic / (short a)
+【字義】(ic: 名詞/形容詞字尾)
+【例句】I can make food disappear in seconds; it’s my only magic trick. 我能讓食物在幾秒鐘內消失；這是我唯一的魔術。"
+noise,"noise (n.) 噪音
+【發音】/ noise / (oi: Vowel o section)
+【字義】(來源無對應字首字根)
+【例句】Silence is golden, but noise is what happens when you have kids. 沈默是金，但噪音是你有小孩後會發生的事。"
+ticket,"ticket (n.) 票
+【發音】/ tick / et / (ick: short i; et: short e)
+【字義】(來源無對應字首字根)
+【例句】I finally got a ticket for speeding, but I was just trying to get home to my bed. 我終於因為超速拿到了罰單，但我只是想趕快回家睡覺。"
+climb,"climb (v.) 爬
+【發音】/ climb / (cl: L-blend; mb: Silent)
+【字義】(來源無對應字首字根)
+【例句】The only thing I want to climb is the ladder to success, or maybe just my bed. 我唯一想爬的是成功的階梯，或者只是我的床。"
+jump,"jump (v./n.) 跳躍
+【發音】/ jump / (short u)
+【字義】(來源無對應字首字根)
+【例句】If you jump for joy, make sure someone is there to catch you if you fall. 如果你因喜悅而跳躍，請確保有人在那裡接住跌倒的你。"
+run,"run (v./n.) 跑步
+【發音】/ run / (short u 'un')
+【字義】(來源無對應字首字根)
+【例句】I only run when the ice cream truck is driving away. 我只有在冰淇淋車開走時才會跑步。"
+hurt,"hurt (v./adj.) 疼痛；受傷
+【發音】/ hurt / (ur: R-control)
+【字義】(來源無對應字首字根)
+【例句】Does it hurt when you fall from heaven? No, but it hurts when I trip over the carpet. 從天堂掉下來會痛嗎？不，但我被地毯絆倒時很痛。"
+soccer,"soccer (n.) 足球
+【發音】/ soc / cer / (er: R-control)
+【字義】(er: 做某事的人/物)
+【例句】Soccer is a game where 22 people run for 90 minutes and then it ends 0-0. 足球是一種 22 個人跑了 90 分鐘，最後以 0 比 0 結束的遊戲。"
+volleyball,"volleyball (n.) 排球
+【發音】/ vol / ley / ball / (ley: long e 'ey'; ball: special a 'all')
+【字義】ball (球) -> 用手擊打球的運動。
+【例句】Volleyball: the only sport where you can hit your friends and it's okay. 排球：唯一一種你可以打你朋友而且沒關係的運動。"
+game,"game (n.) 遊戲；比賽
+【發音】/ game / (long a _e)
+【字義】(來源無對應字首字根)
+【例句】Life is a game, but the graphics are amazing even if the plot is confusing. 生活是一場遊戲，雖然劇情很混亂，但畫面真的很棒。"
+seat,"seat (n.) 座位
+【發音】/ seat / (long e 'ea')
+【字義】(來源無對應字首字根)
+【例句】Please have a seat, but not my seat, because my dog thinks it's his. 請坐，但不要坐我的位子，因為我的狗覺得那是它的。"
+story,"story (n.) 故事
+【發音】/ sto / ry / (st: S-blend; y: long e)
+【字義】(來源無對應字首字根)
+【例句】Every snack has a story, and most of mine end with 'I ate it all'. 每個零食都有一個故事，而我的大部分故事都以「我把它吃光了」結尾。"
+toy,"toy (n.) 玩具
+【發音】/ toy / (short o 'oy')
+【字義】(來源無對應字首字根)
+【例句】The best toy for a cat is usually the cardboard box the expensive toy came in. 對貓來說，最好的玩具通常是裝著昂貴玩具的那個紙箱。"
+sleep,"sleep (v./n.) 睡覺
+【發音】/ sleep / (sl: L-blend; ee: long e)
+【字義】(來源無對應字首字根)
+【例句】Sleep is my drug, my bed is my dealer, and my alarm clock is the police. 睡眠是我的毒品，床是我的藥頭，而鬧鐘就是警察。"
+kick,"kick (v.) 踢
+【發音】/ kick / (ick: short i)
+【字義】(來源無對應字首字根)
+【例句】I got a kick out of watching my brother try to cook dinner. 看著我哥哥試著煮晚餐真的讓我感到很有趣（樂在其中）。"
+stand,"stand (v.) 站立
+【發音】/ stand / (st: S-blend; short a 'an')
+【字義】(來源無對應字首字根)
+【例句】I can't stand people who are always late, but then I realized I am one of them. 我受不了總是遲到的人，但我後來發現我自己也是其中之一。"
+badminton,"badminton (n.) 羽毛球
+【發音】/ bad / min / ton / (bad: short a; min: short i)
+【字義】(來源無對應字首字根)
+【例句】Badminton is the only sport where hitting a bird with a stick is legal. 羽毛球是唯一一種用木棍打「鳥」卻合法的運動。"
+fast,"fast (adj./adv.) 快速的
+【發音】/ fast / (short a; st: T-control)
+【字義】(來源無對應字首字根)
+【例句】I'm very fast at math; 5 plus 5 is 12! See? Fast, but not necessarily right. 我算數學很快；5 加 5 等於 12！看到了嗎？很快，但不一定對。"
+slow,"slow (adj./adv.) 慢的
+【發音】/ slow / (sl: L-blend; ow: long o)
+【字義】(來源無對應字首字根)
+【例句】I'm not slow, I'm just enjoying the scenery while everyone else is rushing. 我並不慢，我只是在大家衝刺時享受風景。"`;
+
+// ============================================================
+// PARSING
+// ============================================================
+function parseVocabulary(raw) {
+  const words = [];
+  // Split by lines starting with a word key
+  const lines = raw.split('\n');
+  let currentKey = '', currentBlock = [];
+
+  function flush() {
+    if (!currentKey) return;
+    const text = currentBlock.join('\n');
+    const w = parseEntry(currentKey, text);
+    if (w) words.push(w);
+  }
+
+  for (const line of lines) {
+    // Detect new entry: starts with word,"word (pos)
+    const m = line.match(/^([a-zA-Z][^,]*),"/);
+    if (m) {
+      flush();
+      currentKey = m[1].trim();
+      currentBlock = [line.replace(/^[^,]*,"/, '').replace(/^"/, '')];
+    } else if (currentKey) {
+      const trimmed = line.replace(/"$/, '');
+      currentBlock.push(trimmed);
+    }
+  }
+  flush();
+  return words;
+}
+
+function parseEntry(key, block) {
+  const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return null;
+
+  // First line: word (pos.) meaning
+  const headerMatch = lines[0].match(/^(.+?)\s*\(([^)]+)\)\s+(.+)$/);
+  const word = key;
+  let pos = '', meaningCN = '';
+  if (headerMatch) {
+    pos = headerMatch[2];
+    meaningCN = headerMatch[3];
+  } else {
+    meaningCN = lines[0];
+  }
+
+  let pronunciation = '', morphology = '', exampleEN = '', exampleCN = '';
+
+  for (const line of lines) {
+    if (line.startsWith('【發音】')) {
+      pronunciation = line.replace('【發音】', '').trim();
+    } else if (line.startsWith('【字義】')) {
+      morphology = line.replace('【字義】', '').trim();
+    } else if (line.startsWith('【例句】')) {
+      const ex = line.replace('【例句】', '').trim();
+      // Try to split English and Chinese
+      const parenMatch = ex.match(/^(.+?)\s*[（(]([^）)]+)[）)]\.?\s*$/);
+      const dotSplit = ex.match(/^(.+?[.!?])\s+(.+)$/);
+      if (parenMatch) {
+        exampleEN = parenMatch[1].trim();
+        exampleCN = parenMatch[2].trim();
+      } else if (dotSplit) {
+        exampleEN = dotSplit[1].trim();
+        exampleCN = dotSplit[2].trim();
+      } else {
+        exampleEN = ex;
+      }
+    }
+  }
+
+  // Parse morphemes from morphology string
+  const morphemes = parseMorphemes(morphology);
+
+  return { word, pos, meaningCN, pronunciation, morphology, morphemes, exampleEN, exampleCN };
+}
+
+function parseMorphemes(morphStr) {
+  // Parse patterns like: prefix- (meaning) + root (meaning) + -suffix (meaning) -> result
+  const parts = [];
+  if (!morphStr) return parts;
+
+  // Split by + and ->
+  const tokens = morphStr.split(/(\s*->\s*|\s*\+\s*)/);
+  let isResult = false;
+
+  for (const token of tokens) {
+    if (!token || token.match(/^\s*[+]\s*$/) || token.match(/^\s*->\s*$/)) {
+      if (token.includes('->')) isResult = true;
+      continue;
+    }
+    const t = token.trim();
+    if (!t) continue;
+
+    if (isResult) {
+      parts.push({ type: 'result', text: t });
+    } else {
+      // Detect prefix/suffix/root
+      const m = t.match(/^(.+?)\s*\(([^)]+)\)/);
+      if (m) {
+        const morphText = m[1].trim();
+        const morphMeaning = m[2].trim();
+        let type = 'root';
+        if (morphText.endsWith('-')) type = 'prefix';
+        else if (morphText.startsWith('-')) type = 'suffix';
+        else if (morphText.match(/^[a-z-]+[-]$/i)) type = 'prefix';
+        else if (morphText.match(/^[-][a-z]+/i)) type = 'suffix';
+        parts.push({ type, text: morphText, meaning: morphMeaning });
+      } else {
+        parts.push({ type: 'root', text: t });
+      }
+    }
+    if (token.includes('->')) isResult = true;
+  }
+  return parts;
+}
+
+function colorizeWord(word, morphemes) {
+  if (!morphemes.length) return `<span>${escapeHtml(word)}</span>`;
+  
+  let result = word;
+  let html = '';
+
+  // Build colored word based on morphemes
+  const parts = morphemes.filter(m => m.type !== 'result');
+  if (!parts.length) return `<span>${escapeHtml(word)}</span>`;
+
+  // Try simple prefix/suffix detection
+  const prefixParts = parts.filter(m => m.type === 'prefix');
+  const suffixParts = parts.filter(m => m.type === 'suffix');
+  const rootParts = parts.filter(m => m.type === 'root');
+
+  let remaining = word;
+  let segments = [];
+
+  // Try to match prefix
+  for (const p of prefixParts) {
+    const clean = p.text.replace(/-/g, '').toLowerCase();
+    if (remaining.toLowerCase().startsWith(clean) && clean.length > 0) {
+      segments.push({ text: remaining.slice(0, clean.length), type: 'prefix' });
+      remaining = remaining.slice(clean.length);
+      break;
+    }
+  }
+
+  // Try to match suffix from end
+  let suffixSegs = [];
+  for (const s of suffixParts) {
+    const clean = s.text.replace(/-/g, '').toLowerCase();
+    if (remaining.toLowerCase().endsWith(clean) && clean.length > 0) {
+      suffixSegs.unshift({ text: remaining.slice(-clean.length), type: 'suffix' });
+      remaining = remaining.slice(0, -clean.length);
+      break;
+    }
+  }
+
+  // Middle is root
+  if (remaining) segments.push({ text: remaining, type: 'root' });
+  segments = segments.concat(suffixSegs);
+
+  if (segments.length <= 1) return `<span>${escapeHtml(word)}</span>`;
+
+  html = segments.map(s => {
+    const color = s.type === 'prefix' ? 'var(--prefix-color)' :
+                  s.type === 'suffix' ? 'var(--suffix-color)' : '#ffd166';
+    return `<span style="color:${color}">${escapeHtml(s.text)}</span>`;
+  }).join('');
+
+  return html;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  // Load learned set from localStorage
+  try {
+    const saved = localStorage.getItem('vocabLearned');
+    if (saved) learnedSet = new Set(JSON.parse(saved));
+  } catch(e) {}
+
+  allWords = parseVocabulary(RAW_VOCABULARY);
+  selectQuizMode('meaning');
+  refreshUI();
+}
+
+function refreshUI() {
+  document.getElementById('total-count').textContent = allWords.length;
+  document.getElementById('learned-count').textContent = learnedSet.size;
+  renderWordGrid();
+  rebuildCardPool();
+  renderCard();
+  updateProgressView();
+}
+
+function saveLearned() {
+  try {
+    localStorage.setItem('vocabLearned', JSON.stringify([...learnedSet]));
+  } catch(e) {}
+}
+
+// ============================================================
+// WORD GRID
+// ============================================================
+function renderWordGrid() {
+  const grid = document.getElementById('word-grid');
+  const term = searchTerm.toLowerCase();
+
+  let words = allWords.filter(w => {
+    if (term && !w.word.toLowerCase().includes(term) && !w.meaningCN.includes(term)) return false;
+    if (currentFilter === 'new' && learnedSet.has(w.word)) return false;
+    if (currentFilter === 'learned' && !learnedSet.has(w.word)) return false;
+    return true;
+  });
+
+  if (!words.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><p>找不到符合的單字</p></div>';
+    return;
+  }
+
+  grid.innerHTML = words.map(w => `
+    <div class="word-tile ${learnedSet.has(w.word) ? 'learned-tile' : ''}" onclick="openDetail('${escapeHtml(w.word)}')">
+      <div class="tile-word">${colorizeWord(w.word, w.morphemes)}</div>
+      <div class="tile-pos">${escapeHtml(w.pos)}</div>
+      <div class="tile-meaning">${escapeHtml(w.meaningCN)}</div>
+    </div>
+  `).join('');
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`filter-${f}`).classList.add('active');
+  renderWordGrid();
+}
+
+document.getElementById('search-input').addEventListener('input', function() {
+  searchTerm = this.value;
+  renderWordGrid();
+});
+
+// ============================================================
+// FLASHCARD
+// ============================================================
+function rebuildCardPool() {
+  if (cardMode === 'all') cardPool = [...allWords];
+  else if (cardMode === 'new') cardPool = allWords.filter(w => !learnedSet.has(w.word));
+  else cardPool = allWords.filter(w => learnedSet.has(w.word));
+
+  if (cardPool.length === 0) cardPool = [...allWords];
+  if (cardIndex >= cardPool.length) cardIndex = 0;
+
+  document.getElementById('card-total').textContent = cardPool.length;
+}
+
+function renderCard() {
+  if (!cardPool.length) return;
+  const w = cardPool[cardIndex];
+
+  document.getElementById('card-current').textContent = cardIndex + 1;
+  document.getElementById('card-total').textContent = cardPool.length;
+
+  // Front - word in plain white, pronunciation text only
+  document.getElementById('fc-word').textContent = w.word;
+  document.getElementById('fc-pron-text').textContent = w.pronunciation;
+
+  // Back - top: colored word; row 2: pos + meaning combined
+  document.getElementById('fc-back-word').innerHTML = colorizeWord(w.word, w.morphemes);
+  document.getElementById('fc-pos-meaning').innerHTML =
+    `<span class="pos-tag">${escapeHtml(w.pos)}</span><span class="meaning-text">${escapeHtml(w.meaningCN)}</span>`;
+
+  // Back - morphemes
+  const mc = document.getElementById('fc-morphemes');
+  const relevantMorphs = w.morphemes.filter(m => m.type !== 'result');
+  const resultMorphs = w.morphemes.filter(m => m.type === 'result');
+
+  if (w.morphemes.length) {
+    mc.innerHTML = relevantMorphs.map(m => {
+      const cls = m.type === 'prefix' ? 'chip-prefix' : m.type === 'suffix' ? 'chip-suffix' : 'chip-root';
+      const label = m.type === 'prefix' ? '字首' : m.type === 'suffix' ? '字尾' : '字根';
+      return `<div class="morpheme-chip ${cls}"><strong>${escapeHtml(m.text)}</strong> ${m.meaning ? `<span style="opacity:0.7">(${escapeHtml(m.meaning)})</span>` : ''}</div>`;
+    }).join('') +
+    (resultMorphs.length ? `<span class="chip-arrow">→</span><div class="morpheme-chip chip-result">${escapeHtml(resultMorphs[0].text)}</div>` : '');
+  } else {
+    mc.innerHTML = `<div style="color:var(--muted);font-size:0.85rem">${escapeHtml(w.morphology || '—')}</div>`;
+  }
+
+  // Back - example
+  document.getElementById('fc-example-en').textContent = w.exampleEN;
+  document.getElementById('fc-example-cn').textContent = w.exampleCN;
+
+  // Learned button
+  const lb = document.getElementById('learned-btn');
+  if (learnedSet.has(w.word)) {
+    lb.textContent = '✅ 已學會！';
+    lb.classList.add('is-learned');
+  } else {
+    lb.textContent = '⭐ 標為已學';
+    lb.classList.remove('is-learned');
+  }
+
+  // Reset flip
+  document.getElementById('flashcard').classList.remove('flipped');
+}
+
+function flipCard() {
+  document.getElementById('flashcard').classList.toggle('flipped');
+}
+
+function nextCard() {
+  cardIndex = (cardIndex + 1) % cardPool.length;
+  renderCard();
+}
+
+function prevCard() {
+  cardIndex = (cardIndex - 1 + cardPool.length) % cardPool.length;
+  renderCard();
+}
+
+function toggleLearned() {
+  if (!cardPool.length) return;
+  const w = cardPool[cardIndex];
+  if (learnedSet.has(w.word)) {
+    learnedSet.delete(w.word);
+    showToast('已移除學習記錄', '📝');
+  } else {
+    learnedSet.add(w.word);
+    showToast('已標為已學 🎉', '✅', true);
+  }
+  saveLearned();
+  document.getElementById('learned-count').textContent = learnedSet.size;
+  renderCard();
+  updateProgressView();
+  renderWordGrid();
+}
+
+function setCardMode(mode) {
+  cardMode = mode;
+  cardIndex = 0;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`mode-${mode}-btn`).classList.add('active');
+  rebuildCardPool();
+  renderCard();
+}
+
+// ============================================================
+// QUIZ
+// ============================================================
+let quizMode = 'meaning'; // 'meaning' | 'spelling'
+
+function selectQuizMode(mode) {
+  quizMode = mode;
+  document.querySelectorAll('.quiz-mode-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`modecard-${mode}`).classList.add('selected');
+}
+
+function startQuiz(pool) {
+  let source = pool === 'learned' ? allWords.filter(w => learnedSet.has(w.word)) : [...allWords];
+  if (source.length < 4) {
+    showToast('至少需要 4 個單字才能開始測驗！', '⚠️');
+    return;
+  }
+  source = shuffle(source).slice(0, 20);
+  quizPool = source;
+  quizIndex = 0;
+  quizScore = 0;
+
+  document.getElementById('quiz-setup').style.display = 'none';
+  document.getElementById('quiz-active').style.display = 'block';
+  document.getElementById('quiz-result').style.display = 'none';
+
+  renderQuestion();
+}
+
+function renderQuestion() {
+  if (quizIndex >= quizPool.length) {
+    showQuizResult();
+    return;
+  }
+
+  quizAnswered = false;
+  const w = quizPool[quizIndex];
+
+  document.getElementById('q-current').textContent = quizIndex + 1;
+  document.getElementById('q-total').textContent = quizPool.length;
+  document.getElementById('q-score').textContent = quizScore;
+  document.getElementById('quiz-progress-fill').style.width = (quizIndex / quizPool.length * 100) + '%';
+  document.getElementById('quiz-next-btn').style.display = 'none';
+
+  if (quizMode === 'meaning') {
+    // Show meaning-mode card, hide spelling
+    document.getElementById('q-meaning-card').style.display = 'block';
+    document.getElementById('q-spelling-card').style.display = 'none';
+    document.getElementById('quiz-options').style.display = 'grid';
+    document.getElementById('spelling-input-area').style.display = 'none';
+
+    document.getElementById('q-word').textContent = w.word;
+    document.getElementById('q-pos').textContent = `(${w.pos})`;
+    document.getElementById('q-pron').textContent = w.pronunciation;
+
+    const wrong = shuffle(allWords.filter(x => x.word !== w.word)).slice(0, 3);
+    const options = shuffle([w, ...wrong]);
+    const container = document.getElementById('quiz-options');
+    container.innerHTML = options.map(opt => `
+      <button class="quiz-option" onclick="selectAnswer(this, '${escapeHtml(opt.word)}', '${escapeHtml(w.word)}')">
+        ${escapeHtml(opt.meaningCN)}
+      </button>
+    `).join('');
+
+  } else {
+    // Spelling mode
+    document.getElementById('q-meaning-card').style.display = 'none';
+    document.getElementById('q-spelling-card').style.display = 'block';
+    document.getElementById('quiz-options').style.display = 'none';
+    document.getElementById('spelling-input-area').style.display = 'block';
+
+    document.getElementById('q-spelling-pos').textContent = `(${w.pos}) ${w.meaningCN}`;
+
+    // Build blank tiles (show first letter as hint)
+    const hintRow = document.getElementById('spelling-hint-row');
+    hintRow.innerHTML = w.word.split('').map((ch, i) => {
+      if (i === 0) return `<span class="spelling-hint-char">${escapeHtml(ch)}</span>`;
+      if (ch === '-' || ch === "'") return `<span class="spelling-hint-char" style="border-bottom:none;color:var(--muted)">${escapeHtml(ch)}</span>`;
+      return `<span class="spelling-blank"></span>`;
+    }).join('');
+
+    // Reset input
+    const inp = document.getElementById('spelling-input');
+    inp.value = '';
+    inp.className = 'spelling-input';
+    inp.disabled = false;
+    document.getElementById('spelling-feedback').textContent = '';
+    document.getElementById('spelling-submit-btn').disabled = false;
+
+    // Auto-play after short delay
+    setTimeout(() => speakQuizWordSpelling(), 400);
+  }
+}
+
+// ---- Meaning quiz answer ----
+function selectAnswer(btn, selected, correct) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+
+  document.querySelectorAll('.quiz-option').forEach(b => {
+    const onclick = b.getAttribute('onclick');
+    const m = onclick.match(/'([^']+)',\s*'([^']+)'/);
+    if (m && m[1] === correct) b.classList.add('correct');
+  });
+
+  if (selected === correct) {
+    btn.classList.add('correct');
+    quizScore++;
+    document.getElementById('q-score').textContent = quizScore;
+    showToast('答對了！🎉', '✅', true);
+  } else {
+    btn.classList.add('wrong');
+    showToast('答錯了 😅', '❌');
+  }
+
+  document.getElementById('quiz-next-btn').style.display = 'inline-flex';
+}
+
+// ---- Spelling quiz ----
+function speakQuizWordSpelling() {
+  if (quizIndex >= quizPool.length) return;
+  const btn = document.getElementById('spelling-play-btn');
+  btn.classList.add('playing');
+  const w = quizPool[quizIndex];
+  speakText(w.word);
+  setTimeout(() => btn.classList.remove('playing'), 2000);
+}
+
+function checkSpelling() {
+  if (quizAnswered) return;
+  const inp = document.getElementById('spelling-input');
+  const feedback = document.getElementById('spelling-feedback');
+  const answer = inp.value.trim().toLowerCase();
+  const correct = quizPool[quizIndex].word.toLowerCase();
+
+  if (!answer) { showToast('請輸入單字！', '✏️'); return; }
+
+  quizAnswered = true;
+  inp.disabled = true;
+  document.getElementById('spelling-submit-btn').disabled = true;
+
+  if (answer === correct) {
+    inp.classList.add('correct-input');
+    quizScore++;
+    document.getElementById('q-score').textContent = quizScore;
+    feedback.innerHTML = `<span style="color:var(--learned)">✅ 答對了！</span>`;
+    showToast('答對了！🎉', '✅', true);
+  } else {
+    inp.classList.add('wrong-input');
+    feedback.innerHTML = `<span style="color:var(--prefix-color)">❌ 答錯了！</span> 正確答案：<strong style="color:var(--text);letter-spacing:1px">${escapeHtml(quizPool[quizIndex].word)}</strong>`;
+    showToast('答錯了 😅', '❌');
+  }
+
+  // Show full blank row filled with correct word
+  const hintRow = document.getElementById('spelling-hint-row');
+  hintRow.innerHTML = quizPool[quizIndex].word.split('').map((ch, i) => {
+    const col = i === 0 ? 'var(--muted)' : (answer[i] === ch.toLowerCase() ? 'var(--learned)' : 'var(--prefix-color)');
+    return `<span class="spelling-hint-char" style="color:${col};border-color:${col}">${escapeHtml(ch)}</span>`;
+  }).join('');
+
+  document.getElementById('quiz-next-btn').style.display = 'inline-flex';
+}
+
+// Enter key submits spelling
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && quizMode === 'spelling' && !quizAnswered) {
+    const area = document.getElementById('spelling-input-area');
+    if (area && area.style.display !== 'none') checkSpelling();
+  }
+});
+
+function speakQuizWord() {
+  if (quizIndex >= quizPool.length) return;
+  speakText(quizPool[quizIndex].word);
+}
+
+function nextQuestion() {
+  quizIndex++;
+  renderQuestion();
+}
+
+function showQuizResult() {
+  document.getElementById('quiz-active').style.display = 'none';
+  document.getElementById('quiz-result').style.display = 'block';
+
+  const pct = Math.round(quizScore / quizPool.length * 100);
+  document.getElementById('result-score').textContent = `${quizScore} / ${quizPool.length}`;
+  document.getElementById('result-title').textContent = pct >= 80 ? '🏆 太棒了！' : pct >= 60 ? '👍 不錯哦！' : '💪 繼續加油！';
+  document.getElementById('result-icon').textContent = pct >= 80 ? '🎉' : pct >= 60 ? '😊' : '📚';
+  document.getElementById('result-msg').textContent = `正確率 ${pct}%！${pct >= 80 ? '你的英文超強的！' : '再多複習幾次就沒問題！'}`;
+}
+
+function resetQuiz() {
+  document.getElementById('quiz-setup').style.display = 'block';
+  document.getElementById('quiz-active').style.display = 'none';
+  document.getElementById('quiz-result').style.display = 'none';
+  document.getElementById('quiz-total-learned').textContent = learnedSet.size;
+  document.getElementById('quiz-total-pool').textContent = allWords.length;
+}
+
+// ============================================================
+// PROGRESS VIEW
+// ============================================================
+function updateProgressView() {
+  const total = allWords.length;
+  const learned = learnedSet.size;
+  const pct = total ? Math.round(learned / total * 100) : 0;
+
+  document.getElementById('pg-total').textContent = total;
+  document.getElementById('pg-learned').textContent = learned;
+  document.getElementById('pg-percent').textContent = pct + '%';
+  document.getElementById('pg-remaining').textContent = total - learned;
+  document.getElementById('pg-progress-bar').style.width = pct + '%';
+
+  // Learned list
+  const container = document.getElementById('learned-list-container');
+  if (!learnedSet.size) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📚</div><p>還沒有已學單字<br>去單字卡頁面開始學習吧！</p></div>';
+    return;
+  }
+
+  const learnedWords = allWords.filter(w => learnedSet.has(w.word));
+  container.innerHTML = `<div class="learned-list">
+    <div class="learned-list-header">
+      <span>📝 ${learnedWords.length} 個已學單字</span>
+    </div>
+    ${learnedWords.map(w => `
+      <div class="learned-list-item">
+        <div>
+          <strong style="color:var(--text)">${escapeHtml(w.word)}</strong>
+          <span style="color:var(--accent);font-size:0.78rem;margin-left:6px">(${escapeHtml(w.pos)})</span>
+          <span style="color:var(--muted);font-size:0.82rem;margin-left:6px">${escapeHtml(w.meaningCN)}</span>
+        </div>
+        <button class="remove-learned" onclick="removeLearned('${escapeHtml(w.word)}')" title="移除">✕</button>
+      </div>
+    `).join('')}
+  </div>`;
+
+  // Update quiz page counts
+  document.getElementById('quiz-total-learned').textContent = learnedSet.size;
+  document.getElementById('quiz-total-pool').textContent = allWords.length;
+}
+
+function removeLearned(word) {
+  learnedSet.delete(word);
+  saveLearned();
+  document.getElementById('learned-count').textContent = learnedSet.size;
+  updateProgressView();
+  renderWordGrid();
+  renderCard();
+}
+
+function clearAllLearned() {
+  if (!learnedSet.size) return;
+  if (confirm('確定要清除所有學習記錄嗎？')) {
+    learnedSet.clear();
+    saveLearned();
+    document.getElementById('learned-count').textContent = 0;
+    updateProgressView();
+    renderWordGrid();
+    renderCard();
+    showToast('已清除所有記錄', '🗑️');
+  }
+}
+
+// ============================================================
+// FILE UPLOAD
+// ============================================================
+const uploadArea = document.getElementById('upload-area');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+});
+
+function loadFile(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const parsed = parseVocabulary(text);
+    if (parsed.length === 0) {
+      showToast('無法解析檔案，請確認格式正確', '⚠️');
+      return;
+    }
+    allWords = parsed;
+    rebuildCardPool();
+    renderCard();
+    renderWordGrid();
+    updateProgressView();
+    document.getElementById('total-count').textContent = allWords.length;
+    showToast(`成功載入 ${parsed.length} 個單字！`, '✅', true);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ============================================================
+// DETAIL MODAL
+// ============================================================
+function openDetail(word) {
+  const w = allWords.find(x => x.word === word);
+  if (!w) return;
+
+  const isLearned = learnedSet.has(w.word);
+  const colored = colorizeWord(w.word, w.morphemes);
+
+  document.getElementById('modal-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+      <span style="font-family:'Nunito',sans-serif;font-size:2rem;font-weight:900">${colored}</span>
+      <span style="font-family:'Caveat',cursive;color:#ffd166;font-size:1.1rem;letter-spacing:1px">${escapeHtml(w.pronunciation)}</span>
+      <button class="speak-btn" onclick="speakWord('${escapeHtml(w.word)}')" title="朗讀">🔊</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+      <span class="fc-pos-meaning"><span class="pos-tag">${escapeHtml(w.pos)}</span><span class="meaning-text">${escapeHtml(w.meaningCN)}</span></span>
+      ${isLearned ? '<span style="color:var(--learned);font-weight:800;font-size:0.85rem">✅ 已學</span>' : ''}
+    </div>
+    <div class="fc-section">
+      <div class="fc-section-label">🔤 字義拆解</div>
+      <div style="color:var(--muted);font-size:0.92rem;line-height:1.7">${escapeHtml(w.morphology)}</div>
+    </div>
+    <div class="fc-section">
+      <div class="fc-section-label">📝 例句
+        <button class="speak-btn" onclick="speakText('${escapeHtml(w.exampleEN)}')" title="朗讀">🔊</button>
+      </div>
+      <div class="fc-example">
+        <div class="en">${escapeHtml(w.exampleEN)}</div>
+        <div class="cn">${escapeHtml(w.exampleCN)}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="toggleLearnedModal('${escapeHtml(w.word)}')" id="modal-learn-btn">
+        ${isLearned ? '✅ 移除已學' : '⭐ 標為已學'}
+      </button>
+      <button class="btn-primary" style="background:var(--card);border:1.5px solid var(--border);color:var(--text)" onclick="goToCard('${escapeHtml(w.word)}')">🃏 開啟單字卡</button>
+    </div>
+  `;
+
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('detail-modal').classList.remove('open');
+}
+
+document.getElementById('detail-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function toggleLearnedModal(word) {
+  if (learnedSet.has(word)) {
+    learnedSet.delete(word);
+  } else {
+    learnedSet.add(word);
+  }
+  saveLearned();
+  document.getElementById('learned-count').textContent = learnedSet.size;
+  renderWordGrid();
+  updateProgressView();
+  openDetail(word); // Re-render modal
+}
+
+function goToCard(word) {
+  closeModal();
+  const idx = cardPool.findIndex(w => w.word === word);
+  if (idx >= 0) cardIndex = idx;
+  else {
+    // Find in all words and switch mode
+    cardMode = 'all';
+    rebuildCardPool();
+    cardIndex = cardPool.findIndex(w => w.word === word) || 0;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('mode-all-btn').classList.add('active');
+  }
+  switchTab('card');
+  renderCard();
+}
+
+// ============================================================
+// SPEECH
+// ============================================================
+function speakCurrentWord() {
+  if (!cardPool.length) return;
+  speakText(cardPool[cardIndex].word);
+}
+
+function speakWord(word) {
+  speakText(word);
+}
+
+function speakExample() {
+  if (!cardPool.length) return;
+  const w = cardPool[cardIndex];
+  speakText(w.exampleEN);
+}
+
+function speakQuizWord() {
+  const word = document.getElementById('q-word').textContent;
+  speakText(word);
+}
+
+let slowMode = true; // default: slow
+
+function speakText(text) {
+  if (!text) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  const hasChinese = /[\u4e00-\u9fff]/.test(text);
+  utter.lang = hasChinese ? 'zh-TW' : 'en-US';
+  utter.rate = slowMode ? 0.6 : 1.0;
+  window.speechSynthesis.speak(utter);
+}
+
+function toggleSpeed() {
+  slowMode = !slowMode;
+  const btn = document.getElementById('speed-toggle');
+  btn.textContent = slowMode ? '🐢 慢速' : '🐇 正常';
+  btn.style.borderColor = slowMode ? '#06d6a0' : 'var(--border)';
+  btn.style.color = slowMode ? '#06d6a0' : 'var(--muted)';
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`view-${tab}`).classList.add('active');
+  const idx = ['list','card','review','progress','upload'].indexOf(tab);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+
+  if (tab === 'progress') updateProgressView();
+  if (tab === 'review') {
+    document.getElementById('quiz-total-learned').textContent = learnedSet.size;
+    document.getElementById('quiz-total-pool').textContent = allWords.length;
+  }
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, icon = '📌', success = false) {
+  const t = document.getElementById('toast');
+  t.innerHTML = `${icon} ${msg}`;
+  t.className = 'toast show' + (success ? ' success' : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.classList.remove('show'); }, 2500);
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ============================================================
+// START
+// ============================================================
+init();
+
+// ============================================================
+// PWA: Service Worker Registration
+// ============================================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW registration failed:', err));
+  });
+}
+
+// PWA: Install prompt (Android Chrome)
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallBanner();
+});
+
+function showInstallBanner() {
+  const banner = document.createElement('div');
+  banner.id = 'install-banner';
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex:1">
+      <span style="font-size:1.4rem">📲</span>
+      <div>
+        <div style="font-weight:800;font-size:0.9rem">安裝到手機桌面</div>
+        <div style="font-size:0.75rem;color:var(--muted)">離線也能使用，就像原生 APP</div>
+      </div>
+    </div>
+    <button onclick="installPWA()" style="background:var(--btn-primary);border:none;color:white;padding:8px 18px;border-radius:20px;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:'Nunito',sans-serif">安裝</button>
+    <button onclick="document.getElementById('install-banner').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px 8px">✕</button>
+  `;
+  banner.style.cssText = `
+    position:fixed;bottom:0;left:0;right:0;
+    background:var(--card2);
+    border-top:1.5px solid var(--border);
+    padding:14px 18px calc(14px + var(--safe-bottom));
+    display:flex;align-items:center;gap:10px;
+    z-index:500;
+    animation:slideUp2 0.3s ease;
+  `;
+  document.body.appendChild(banner);
+}
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(result => {
+    if (result.outcome === 'accepted') showToast('安裝成功！歡迎加入桌面 🎉', '📲', true);
+    deferredPrompt = null;
+    const b = document.getElementById('install-banner');
+    if (b) b.remove();
+  });
+}
+
+// iOS install hint (Safari doesn't support beforeinstallprompt)
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+if (isIOS && !isInStandaloneMode) {
+  setTimeout(() => {
+    const tip = document.createElement('div');
+    tip.innerHTML = `
+      <span style="font-size:1.3rem">📲</span>
+      <div style="flex:1">
+        <div style="font-weight:800;font-size:0.88rem">安裝到 iPhone 桌面</div>
+        <div style="font-size:0.75rem;color:var(--muted)">點擊 Safari 下方 <strong style="color:var(--accent)">分享</strong> → <strong style="color:var(--accent)">加入主畫面</strong></div>
+      </div>
+      <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem">✕</button>
+    `;
+    tip.style.cssText = `
+      position:fixed;bottom:0;left:0;right:0;
+      background:var(--card2);border-top:1.5px solid var(--border);
+      padding:14px 18px calc(14px + var(--safe-bottom));
+      display:flex;align-items:center;gap:12px;z-index:500;
+      animation:slideUp2 0.3s ease;
+    `;
+    document.body.appendChild(tip);
+  }, 1500);
+}
+
+// Add keyframe for banner slide-up
+const style2 = document.createElement('style');
+style2.textContent = '@keyframes slideUp2{from{transform:translateY(100%);opacity:0}to{transform:none;opacity:1}}';
+document.head.appendChild(style2);
+</script>
+</body>
+</html>
+`;
