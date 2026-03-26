@@ -794,13 +794,49 @@
   .toast.show { transform: none; opacity: 1; }
   .toast.success { border-color: var(--learned); }
 
-  @media (max-width: 600px) {
-    .word-grid { grid-template-columns: 1fr 1fr; }
-    .quiz-options { grid-template-columns: 1fr; }
-    .fc-word { font-size: 1.9rem; }
-    .stats-bar { gap: 8px; }
-    .stat-chip { padding: 4px 10px; font-size: 0.75rem; }
+ /* ===== MOBILE ENHANCEMENT ===== */
+@media (max-width: 600px) {
+  body {
+    font-size: 16px;
   }
+
+  .view {
+    padding: 12px;
+  }
+
+  .word-grid {
+    grid-template-columns: 1fr; /* 一列，避免太擠 */
+  }
+
+  .word-tile {
+    padding: 18px;
+    font-size: 1rem;
+  }
+
+  .flashcard {
+    min-height: 320px;
+  }
+
+  .card-face {
+    padding: 20px;
+  }
+
+  .fc-word {
+    font-size: 2rem;
+  }
+
+  .action-btn {
+    flex: 1;
+    padding: 14px;
+  }
+
+  .card-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg);
+    padding: 10px;
+  }
+}
 </style>
 </head>
 <body>
